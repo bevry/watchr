@@ -158,7 +158,7 @@ Watcher = class
 			curr = arguments[0]
 			prev = arguments[1]
 			console.log arguments  if debug
-			return @  if curr.mtime.getTime() is prev.mtime.getTime()  or  curr.size is prev.size
+			return @  if curr.mtime.getTime() is prev.mtime.getTime()  or  curr.size isnt prev.size
 			@changed()
 			@watch()
 			return @

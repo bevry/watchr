@@ -61,7 +61,8 @@ Watcher = class
 	# Now it's time to construct our watcher
 	# We give it a path, and give it some events to use
 	# Then we get to work with watching it
-	constructor: (path,events=[]) ->
+	# next()
+	constructor: (path,events=[],next) ->
 		@children = []
 		@events = []
 		@path = path
@@ -71,7 +72,7 @@ Watcher = class
 			throw err  if err
 			@stat = stat
 			@isDirectory = stat.isDirectory()
-			@watch()
+			@watch(next)
 	
 	# Let's now add our events
 	# We should support being passed a list of events, as well as one event, or no events (for error prevention)
@@ -146,32 +147,42 @@ Watcher = class
 		@
 	
 	# We need something to figure out what to do when a file is changed
-	# It will check if we are still active, and if so, then
-	# Handle the events appropriatly
-	handler: (action) ->
+	# It will check if we are still active, and if so, then handle the fs.watchFile event
+	handlerWatchFile: (curr,prev) ->
+		# Log
+		console.log "handlerWatchFile: #{@path}"  if debug
+		console.log arguments  if debug
+
 		# Ignore if we are closed
 		return  if @state is 'closed'
-		
-		# Using fs.watchFile
-		if arguments.length is 2  and  typeof arguments[0] isnt 'string'
-			console.log "watchFile: #{@path}"  if debug
-			curr = arguments[0]
-			prev = arguments[1]
-			console.log arguments  if debug
-			return @  if curr.mtime.getTime() is prev.mtime.getTime()  or  curr.size is prev.size
-			@changed()
-			@watch()
-			return @
-		
-		# Using fs.watch
-		console.log "#{action}: #{@path}"  if debug
+
+		# Handle fs.watchFile event
+		return  if curr.mtime.getTime() is prev.mtime.getTime()  and  curr.size is prev.size
+		@changed()
+		@watch()
+
+		# Done
+		return
+	
+	# We need something to figure out what to do when a file is changed
+	# It will check if we are still active, and if so, then handle the fs.watch event
+	handlerWatch: (event,filename) ->
+		# Log
+		console.log "handlerWatch: #{@path}"  if debug
+		console.log arguments  if debug
+
+		# Ignore if we are closed
+		return  if @state is 'closed'
+
+		# Ignore if what changed was a hidden file
+		return  if filename and /^[\.~]/.test filename
 
 		# Renames and new files
 		# If we are a file then stop our close our watcher, as an event will also have fired for the parent directory
 		# If we are the parent directory, then trigger our change event,
 		#  then re-initialise all our listernes, as we want to close listerners for deleted files
 		#  and add new listeners for added files
-		if action is 'rename'
+		if event is 'rename'
 			if @isDirectory is false
 				@close()
 			else
@@ -182,7 +193,7 @@ Watcher = class
 		# Changed files
 		# If we were a change, then let's check that something did actually change
 		# If it did, then trigger our change event
-		else if action is 'change'
+		else if event is 'change'
 			fs.stat @path, (err,stat) =>
 				# Ignore if we are closed
 				return  if @state is 'closed'
@@ -190,33 +201,69 @@ Watcher = class
 				return  if stat.mtime.getTime() is @stat.mtime.getTime()  and  stat.size is @stat.size
 				@stat = stat
 				@changed()
-		
-		# Chain
-		@
+
+		# Done
+		return
 	
 	# Setup the watching for our path
 	# If we are already watching this path then let's start again (call close)
 	# Then if we are a directory, let's recurse
 	# Finally, let's initialise our node.js watcher that'll let us know when things happen
 	# and update our state to active
-	watch: ->
+	watch: (next) ->
+		# Prepare
 		@close()
 		console.log "watch: #{@path}"  if debug
+
+		# Tasks
+		completed = 0
+		expected = 2
+		complete = ->
+			++completed
+			if completed is expected
+				next?()
+		
+		# Cycle through the directory if necessary
 		if @isDirectory
 			fs.readdir @path, (err,files) =>
 				throw err  if err
+				expected += files.length
+				complete()
 				for file in files
-					continue  if /^[\.~]/.test file
+					# Ignore hidden files/dirs
+					if /^[\.~]/.test file
+						--expected
+						continue
+					
+					# Watch the file/dir
 					filePath = @path+'/'+file
-					watcher = watch filePath, => @changed()
+					watcher = watch(
+						filePath
+						=>
+							@changed()
+						complete
+					)
+
+					# Store the child watchr in us
 					@children.push watcher
+		else
+			complete()
+		
+		# Watch the current file/directory
 		try
-			fs.watchFile @path, => @handler.apply(@,arguments)
+			# Try first with fs.watchFile
+			fs.watchFile @path, (args...) =>
+				@handlerWatchFile.apply(@,args)
 			@method = 'watchFile'
 		catch err
-			@fswatcher = fs.watch @path, => @handler.apply(@,arguments)
+			# Then try with fs.watch
+			@fswatcher = fs.watch @path, (args...) =>
+				@handlerWatch.apply(@,args)
 			@method = 'watch'
+		
+		# We are now watching so set the state as active
 		@state = 'active'
+		complete()
 		@
 
 
@@ -224,14 +271,15 @@ Watcher = class
 # This will create our new Watcher class for the path we want
 #  (or use an existing one, and add the events)
 # Watcher also uses this too
-watch = (path,events) ->
+watch = (path,events,next) ->
 	# Check if we are already watching that path
 	if watchers[path]?
 		# We do, so let's use that one instead
 		watchers[path].addEvents(events)
+		next?()
 	else
 		# We don't, so let's create a new one
-		watchers[path] = new Watcher(path,events)
+		watchers[path] = new Watcher(path,events,next)
 
 
 # Now let's provide node.js with our public API

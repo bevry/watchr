@@ -1,6 +1,6 @@
 {
 	"name": "watchr",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"description": "Node.js watching library, as all the other ones suck.",
 	"homepage": "https://github.com/balupton/watchr",
 	"keywords": [
@@ -41,6 +41,11 @@
 	"repository" : {
 		"type": "git",
 		"url": "http://github.com/balupton/watchr.git"
+	},
+	"devDependencies": {
+		"docco": "0.3.x",
+		"bal-util": "1.1.x",
+		"mocha": "0.11.x"
 	},
 	"engines" : {
 		"node": ">=0.4.0"

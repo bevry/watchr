@@ -14,7 +14,7 @@ fs = require('fs')
 # Let's set the debugging mode
 # We will use this later on when outputting messages that make our code easier to debug
 # Note: when we publish the module, we want to set this as off, as we don't want the application using us
-#  to spurt our all our debug messages!
+#  to spurt out all our debug messages!
 debug = false
 
 # Now to make watching files more convient and managed, we'll create a class which we can use to attach to each file
@@ -272,6 +272,11 @@ Watcher = class
 #  (or use an existing one, and add the events)
 # Watcher also uses this too
 watch = (path,events,next) ->
+	# Check if what we received is an Array. If so we will assume it's an 
+	# array and start watching each path within
+	if Array.isArray path
+		path.forEach (p) -> watch p, events, next
+		return
 	# Check if we are already watching that path
 	if watchers[path]?
 		# We do, so let's use that one instead

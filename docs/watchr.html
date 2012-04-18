@@ -55,7 +55,8 @@ for changed files: 'change', fullPath, currentStat, previousStat
 for new files:     'new',    fullPath, currentStat, null
 for deleted files: 'unlink', fullPath, null,        previousStat
 In the future we will add:
-for renamed files: 'rename', fullPath, currentStat, previousStat, newFullPath</p>             </td>             <td class="code">               <div class="highlight"><pre>	<span class="nv">changed: </span><span class="nf">(args...) -&gt;</span></pre></div>             </td>           </tr>                               <tr id="section-37">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-37">&#182;</a>               </div>               <p>Prepare</p>             </td>             <td class="code">               <div class="highlight"><pre>		<span class="nv">me = </span><span class="nx">@</span>
+for renamed files: 'rename', fullPath, currentStat, previousStat, newFullPath
+rename is possible as the stat.ino is the same for the unlink and new</p>             </td>             <td class="code">               <div class="highlight"><pre>	<span class="nv">changed: </span><span class="nf">(args...) -&gt;</span></pre></div>             </td>           </tr>                               <tr id="section-37">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-37">&#182;</a>               </div>               <p>Prepare</p>             </td>             <td class="code">               <div class="highlight"><pre>		<span class="nv">me = </span><span class="nx">@</span>
 		<span class="nv">fileFullPath = </span><span class="nx">@path</span>
 		<span class="nv">currentStat = </span><span class="kc">null</span>
 		<span class="nv">previousStat = </span><span class="nx">@stat</span>

@@ -1,4 +1,4 @@
-#!/usr/bin/env coffee
-watcher = require("#{__dirname}/../lib/watchr.coffee")
-watcher.watch process.cwd(), ->
-	console.log 'giggity'
+#!/usr/bin/env node
+require('coffee-script');
+path = require('path');
+require(path.join(__dirname,'watchr.coffee'));

@@ -7,9 +7,17 @@ The source code here is written as an experiment of literate programming
 Which means you would be able to understand it, without knowing code
 ###
 
-# Require the file system module for node.js
+# Require the node.js file system module
 # This provides us with what we need to interact with the file system (aka files and directories)
 fs = require('fs')
+
+# Require the node.js event emitter
+# This provides us with the event system that we use for binding and trigger events
+EventEmitter = require('events').EventEmitter
+
+# Require the balUtil module
+# This provides us with various flow logic and path utilities
+balUtil = require('bal-util')
 
 # Let's set the debugging mode
 # We will use this later on when outputting messages that make our code easier to debug
@@ -22,7 +30,7 @@ debug = false
 # We'll also store a global store of all the watchers and their paths so we don't have multiple watchers going at the same time
 #  for the same file - as that would be quite ineffecient
 watchers = {}
-Watcher = class
+Watcher = class extends EventEmitter
 	# The path this class instance is attached to
 	path: null
 
@@ -32,23 +40,12 @@ Watcher = class
 	# Our fs.stat object, it contains things like change times, size, and is it a directory
 	stat: null
 
-	# The events that we will trigger when we detect a change
-	# We make this as an array as otherwise we would have to have one listener for every event
-	#  as that would be quite slow
-	# So instead we have one listener, with many events
-	events: []
-
 	# The node.js file watcher instance, we have to open and close this, it is what notifies us of the events
 	fswatcher: null
 
-	# We also want to setup a delay between change events, as if we changed a lot of files,
-	#  we just want to be notified once, instead of like 1000 times
-	timeout: null
-	delay: 500
-
 	# The watchers for the children of this watcher will go here
 	# This is for when we are watching a directory, we will scan the directory and children go here
-	children: []
+	children: null  # {}
 
 	# We have to store the current state of the watcher and it is asynchronous (things can fire in any order)
 	# as such, we don't want to be doing particular things if this watcher is deactivated (closed)
@@ -62,57 +59,179 @@ Watcher = class
 	# We give it a path, and give it some events to use
 	# Then we get to work with watching it
 	# next()
-	constructor: (path,events=[],next) ->
-		@children = []
-		@events = []
-		@path = path
-		@addEvents events
-		fs.stat @path, (err,stat) =>
-			return  if @state is 'closed'
-			throw err  if err
+	constructor: (options) ->
+		# Prepare
+		options or= {}
+		watcher = @
+		@children = {}
+		applyStat = (stat) =>
 			@stat = stat
 			@isDirectory = stat.isDirectory()
-			@watch(next)
-	
-	# Let's now add our events
-	# We should support being passed a list of events, as well as one event, or no events (for error prevention)
-	# We should also not add an event if it is already added
-	addEvents: (events) ->
-		unless events instanceof Array
-			if events
-				events = [events]
-			else
-				events = []
-		for event in events
-			found = false
-			for storedEvent in @events
-				if storedEvent is event
-					found = true
-					break
-			if not found
-				@events.push(event)
-		@
-	
-	# Before we start watching, we'll have to setup the functions our watcher will need
+			@watch (err) ->
+				options.next?(err,watcher)
 
-	# It will need function to trigger all of our watcher's events
-	trigger: ->
-		console.log "trigger: #{@path}"  if debug
-		for event in @events
-			event()
+		# Path
+		@path = options.path
+
+		# Options
+		@options = options
+		
+		# Event
+		if options.listener
+			@listen(options.listener)
+
+		# Events
+		if options.listeners
+			for listener in options.listeners
+				@listen(listener)
+
+		# Stat
+		if options.stat
+			# We already have a stat
+			applyStat(options.stat)
+		else
+			# Fetch a stat
+			fs.stat @path, (err,stat) =>
+				# Check if we are no longer necessary
+				if @state is 'closed'
+					return
+
+				# Check if an error occured
+				if err
+					throw err
+
+				# Apply the stat
+				applyStat(stat)
+	
+
+	# Before we start watching, we'll have to setup the functions our watcher will need
+	
+	# Listen to the change event for us
+	listen: (listener) ->
+		# Listen
+		@removeListener('changed',listener)
+		@on('changed',listener)
+		console.log "added a listener: on #{@path}"  if debug
+
+		# Chain
 		@
 	
-	# We also need something so when a file is changed, we wait a while until things have calmed down
-	#  and once they have calmed down, then trigger our events
-	changed: ->
-		console.log "changed: #{@path}"  if debug
-		if @timeout
-			clearTimeout(@timeout)
-			@timeout = false
-		@timeout = setTimeout(
-			=> @trigger()
-			@delay
-		)
+	# We need something to bubble events up from a child file all the way up the top
+	bubble: (args...) ->
+		# Prepare
+		[eventName,filename,currentStat,previousStat] = args
+
+		# Log
+		console.log "bubble: #{eventName}: #{filename} on #{@path}"  if debug
+
+		# Trigger
+		@emit('changed',eventName,filename,currentStat,previousStat)
+
+		# Chain
+		@
+
+	# A change event has fired
+	# Things to note:
+	#	watchFile:
+	#		currentStat still exists even for deleted/renamed files
+	#		for deleted and changed files, it will fire on the file
+	#		for new files, it will fire on the directory
+	#	fsWatcher:
+	#		eventName is always 'change', 'rename' is not yet implemented by node
+	#		currentStat still exists even for deleted/renamed files
+	#		previousStat is accurate, however we already have htis
+	#		for deleted and changed files, it will fire on the file
+	#		for new files, it will fire on the directory
+	# How this should work:
+	#	for changed files: 'change', fullPath, currentStat, previousStat
+	#	for new files:     'new',    fullPath, currentStat, null
+	#	for deleted files: 'unlink', fullPath, null,        previousStat
+	# In the future we will add:
+	#	for renamed files: 'rename', fullPath, currentStat, previousStat, newFullPath
+	#	rename is possible as the stat.ino is the same for the unlink and new
+	changed: (args...) ->
+		# Prepare
+		me = @
+		fileFullPath = @path
+		currentStat = null
+		previousStat = @stat
+		fileExists = null
+
+		# Log
+		console.log "watch event triggered on #{@path}"  if debug
+		#console.log args  if debug
+
+		# Prepare: is the same?
+		isTheSame = =>
+			if currentStat? and previousStat?
+				if currentStat.size is previousStat.size and currentStat.mtime.toString() is previousStat.mtime.toString()
+					return true
+			return false
+
+		# Prepare: determine the change
+		determineTheChange = =>
+			# If we no longer exist, then we where deleted
+			if !fileExists
+				console.log('determined unlink:',fileFullPath)  if debug
+				@emit('changed','unlink',fileFullPath,currentStat,previousStat)
+
+			# Otherwise, we still do exist
+			else
+				# Let's check for changes
+				if isTheSame()
+					# nothing has changed, so ignore
+					console.log("determined same:",fileFullPath)  if debug
+
+				# Otherwise, something has changed
+				else
+					# So let's check if we are a directory
+					# as if we are a directory the chances are something actually happened to a child (rename or delete)
+					# and if we are the same, then we should scan our children to look for renames and deletes
+					if @isDirectory
+						if isTheSame() is false
+							# Check for new files
+							fs.readdir fileFullPath, (err,newFileRelativePaths) =>
+								throw err  if err
+								balUtil.each newFileRelativePaths, (newFileRelativePath) =>
+									if @children[newFileRelativePath]?
+										# already exists
+									else
+										# new file
+										newFileFullPath = path.join(fileFullPath,newFileRelativePath)
+										fs.stat newFileFullPath, (err,newFileStat) =>
+											throw err  if err
+											console.log('determined new:',newFileFullPath)  if debug
+											@emit('changed','new',newFileFullPath,newFileStat,null)
+											@watchChild(newFileFullPath,newFileRelativePath,newFileStat)
+
+					# If we are a file, lets simply emit the change event
+					else
+						# It has changed, so let's emit a change event
+						console.log('determined change:',fileFullPath)  if debug
+						@emit('changed','change',fileFullPath,currentStat,previousStat)
+		
+		# Check if the file still exists
+		path.exists fileFullPath, (exists) ->
+			# Apply
+			fileExists = exists
+
+			# If the file still exists, then update the stat
+			if fileExists
+				fs.stat fileFullPath, (err,stat) ->
+					# Check
+					throw err  if err
+
+					# Update
+					currentStat = stat
+					me.stat = currentStat
+
+					# Get on with it
+					determineTheChange()
+			else
+				# Get on with it
+				determineTheChange()
+
+		# Chain
 		@
 	
 	# We will need something to close our listener for removed or renamed files
@@ -122,17 +241,15 @@ Watcher = class
 		return @  if @state is 'closed'
 		console.log "close: #{@path}"  if debug
 
-		# Close and destroy children
-		for watcher,index in @children
-			watcher.close()
-			delete @children[index]
-		@children = []
+		# Close our children
+		for own childRelativePath,watchr of @children
+			@closeChild(childRelativePath)
 
 		# Close ourself
 		if @state isnt 'closed'
 			# Close listener
 			if @method is 'watchFile'
-				fs.unwatchFile @path
+				fs.unwatchFile(@path)
 			else if @method is 'watch'  and  @fswatcher
 				@fswatcher.close()
 				@fswatcher = null
@@ -145,125 +262,124 @@ Watcher = class
 
 		# Chain
 		@
-	
-	# We need something to figure out what to do when a file is changed
-	# It will check if we are still active, and if so, then handle the fs.watchFile event
-	handlerWatchFile: (curr,prev) ->
-		# Log
-		console.log "handlerWatchFile: #{@path}"  if debug
-		console.log arguments  if debug
 
-		# Ignore if we are closed
-		return  if @state is 'closed'
+	# Close a child
+	closeChild: (fileRelativePath) ->
+		# Prepare
+		watcher = @children[fileRelativePath]
 
-		# Handle fs.watchFile event
-		return  if curr.mtime.getTime() is prev.mtime.getTime()  and  curr.size is prev.size
-		@changed()
-		@watch()
+		# Check
+		if watcher
+			watcher.close()
+			delete @children[index]
 
-		# Done
-		return
-	
-	# We need something to figure out what to do when a file is changed
-	# It will check if we are still active, and if so, then handle the fs.watch event
-	handlerWatch: (event,filename) ->
-		# Log
-		console.log "handlerWatch: #{@path}"  if debug
-		console.log arguments  if debug
+		# Chain
+		@
 
-		# Ignore if we are closed
-		return  if @state is 'closed'
+	# Setup watching a child
+	watchChild: (fileFullPath,fileRelativePath,fileStat,next) ->
+		# Prepare
+		me = @
+		options = @options
 
-		# Ignore if what changed was a hidden file
-		return  if filename and /^[\.~]/.test filename
+		# Watch the file
+		watch(
+			# Necessary
+			path: fileFullPath
+			listener: (args...) ->
+				me.bubble(args...)
 
-		# Renames and new files
-		# If we are a file then stop our close our watcher, as an event will also have fired for the parent directory
-		# If we are the parent directory, then trigger our change event,
-		#  then re-initialise all our listernes, as we want to close listerners for deleted files
-		#  and add new listeners for added files
-		if event is 'rename'
-			if @isDirectory is false
-				@close()
-			else
-				@changed()
-				try
-					@watch()
-			
-		# Changed files
-		# If we were a change, then let's check that something did actually change
-		# If it did, then trigger our change event
-		else if event is 'change'
-			fs.stat @path, (err,stat) =>
-				# Ignore if we are closed
-				return  if @state is 'closed'
-				throw err  if err
-				return  if stat.mtime.getTime() is @stat.mtime.getTime()  and  stat.size is @stat.size
-				@stat = stat
-				@changed()
+			# Options
+			stat: fileStat
+			ignoreHiddenFiles: options.ignoreHiddenFiles
+			ignorePatterns: options.ignorePatterns
 
-		# Done
-		return
+			# Next
+			next: (err,watcher) ->
+				# Stop if an error happened
+				return next?(err)  if err
+
+				# Store the child watchr in us
+				me.children[fileRelativePath] = watcher
+
+				# Proceed to the next file
+				next?()
+		)
 	
 	# Setup the watching for our path
 	# If we are already watching this path then let's start again (call close)
 	# Then if we are a directory, let's recurse
 	# Finally, let's initialise our node.js watcher that'll let us know when things happen
 	# and update our state to active
+	# next(err)
 	watch: (next) ->
 		# Prepare
-		@close()
+		me = @
+		options = @options
 		console.log "watch: #{@path}"  if debug
 
-		# Tasks
-		completed = 0
-		expected = 2
-		complete = ->
-			++completed
-			if completed is expected
-				next?()
-		
-		# Cycle through the directory if necessary
-		if @isDirectory
-			fs.readdir @path, (err,files) =>
-				throw err  if err
-				expected += files.length
-				complete()
-				for file in files
-					# Ignore hidden files/dirs
-					if /^[\.~]/.test file
-						--expected
-						continue
-					
-					# Watch the file/dir
-					filePath = @path+'/'+file
-					watcher = watch(
-						filePath
-						=>
-							@changed()
-						complete
-					)
+		# Close our all watch listeners
+		@close()
 
-					# Store the child watchr in us
-					@children.push watcher
-		else
-			complete()
-		
-		# Watch the current file/directory
-		try
-			# Try first with fs.watchFile
-			fs.watchFile @path, (args...) =>
-				@handlerWatchFile.apply(@,args)
-			@method = 'watchFile'
-		catch err
-			# Then try with fs.watch
-			@fswatcher = fs.watch @path, (args...) =>
-				@handlerWatch.apply(@,args)
-			@method = 'watch'
-		
-		# We are now watching so set the state as active
-		@state = 'active'
-		complete()
+		# Prepare Start Watching
+		startWatching = =>
+			# Create a set of tasks
+			tasks = new balUtil.Group (err) ->
+				next?(err)
+			tasks.total = 2
+
+			# Cycle through the directory if necessary
+			if @isDirectory
+				balUtil.scandir(
+					# Path
+					path: @path
+
+					# Options
+					ignoreHiddenFiles: options.ignoreHiddenFiles
+					ignorePatterns: options.ignorePatterns
+					recurse: false
+
+					# Next
+					next: (err) ->
+						tasks.complete(err)
+
+					# File and Directory Actions
+					action: (fileFullPath,fileRelativePath,nextFile,fileStat) ->
+						# Watch it
+						me.watchChild fileFullPath, fileRelativePath, fileStat, (err) ->
+							nextFile(err)
+				)
+			else
+				tasks.complete()
+			
+			# Watch the current file/directory
+			try
+				# Try first with fs.watchFile
+				fs.watchFile @path, (args...) ->
+					me.changed.apply(me,args)
+				@method = 'watchFile'
+			catch err
+				# Then try with fs.watch
+				@fswatcher = fs.watch @path, (args...) ->
+					me.changed.apply(me,args)
+				@method = 'watch'
+			
+			# We are now watching so set the state as active
+			@state = 'active'
+			tasks.complete()
+
+		# Check if we still exist
+		path.exists @path, (exists) ->
+			# Check
+			unless exists
+				# We don't exist anymore, move along
+				next()
+				return @
+
+			# Start watching
+			startWatching()
+
+		# Chain
 		@
 
 
@@ -271,17 +387,56 @@ Watcher = class
 # This will create our new Watcher class for the path we want
 #  (or use an existing one, and add the events)
 # Watcher also uses this too
-watch = (path,events,next) ->
+watch = (args...) ->
+	# Three arguments
+	# [path,options,next]
+	if args.length is 3
+		# Prepare
+		argTwo = args[1]
+		options = {}
+
+		# Single Event
+		if typeof argTwo is 'function'
+			options.listener = argTwo
+		# Multiple Events
+		else if Array.isArray(argTwo)
+			options.listeners = argTwo
+		# Options
+		else if typeof argTwo is 'object'
+			options = argTwo
+
+		# Extract
+		options.path = args[0]
+		options.next = args[2]
+
+	# One argument
+	# [options]
+	else if args.length is 1
+		# Extract
+		argOne = args[0]
+		if typeof argOne is 'object'
+			options = argOne
+		else
+			options = {}
+			options.path = argOne
+
+	# Extract path
+	path = options.path
+	next = options.next
+
 	# Check if we are already watching that path
 	if watchers[path]?
 		# We do, so let's use that one instead
-		watchers[path].addEvents(events)
-		next?()
+		watcher = watchers[path]
+		next?(null,watcher)
+		return watcher
 	else
 		# We don't, so let's create a new one
-		watchers[path] = new Watcher(path,events,next)
+		watcher = new Watcher(options)
+		watchers[path] = watcher
+		return watcher
 
 
 # Now let's provide node.js with our public API
 # In other words, what the application that calls us has access to
-module.exports = {watch}
+module.exports = {watch,Watcher}

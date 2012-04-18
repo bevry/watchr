@@ -1,5 +1,12 @@
 ## History
 
+- v2.0 April 19, 2012
+	- Big rewrite
+	- Got rid of the delay
+	- Now always fires events
+	- Watcher instsances inherit from Node's EventEmitter
+	- Events for `change`, `unlink` and `new`
+
 - v1.0 February 11, 2012
 	- Better support for ignoring hidden files
 	- Improved documentation, readme

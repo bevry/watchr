@@ -1,53 +1,44 @@
-## Watchr. Node.js file watching that doesn't suck.
+## Watchr
 
-Watchr normalises the node.js watching functionality between 0.4's `fs.watchFile`, and 0.6's `fs.watch`, and adds support for watching entire directories including their far descendants (some call this recursive directory watching)
+Watchr provides a better and normalised API between Node's 0.4 watchFile and 0.6's fsWatcher.
 
+You install it via `npm istall watchr`, use it via `require('watchr').watch(path,listeners,next)`. Listeners will be triggered whenever a change is made on the directory or for anything inside it (including sub-directories and so on) and are in the following format `var listener = function(eventName,filePath,fileCurrentStat,filePreviousStat){}`
 
-### Using
+There are three types of events for your listeners at your disposal:
 
-- JavaScript
+- `change`: a file has been modified
+- `new`: a new file or directory has been created
+- `unlink`: a file or a directory has been removed
 
-	``` javascript
-	// Requires
-	require('coffee-script'); # watchr dependency
-	var watchr = require('watchr');
+To wrap it all together, it would look like this:
 
-	// Watch
-	watchr.watch(path,function(){
-		console.log('something changed inside the directory');
-	});
-	```
+``` javascript
+// Require
+watchr = require('watchr')
 
-- CoffeeScript
-
-	``` coffeescript
-	# Requires
-	watchr = require('watchr')
-
-	# Watch
-	watchr.watch path, ->
-		console.log('something changed inside the directory')
-	```
-
-
-## Install
-
-``` bash
-npm install watchr
+// Watch a directory or file
+watchr.watch(path,function(eventName,filePath,fileCurrentStat,filePreviousStat){
+	console.log('a watch event occured:',arguments);
+});
 ```
+
+You can test the above code snippet by installing watchr globally by running `npm install -g watchr` to install watchr, then `watchr [pathToWatch]` to watchr a particular path, and performing some file system modifications on that path.
+
+Thanks for using Watchr!
 
 
 ## Support
 
-Support can be found in the [github issue tracker](https://github.com/balupton/watchr/issues)
+Support can be found in the [GitHub Issue Tracker](https://github.com/bevry/watchr/issues)
 
 
 ## History
 
-You can discover the history inside the [History.md](https://github.com/balupton/watchr/blob/master/History.md#files) file
+You can discover the history inside the [History.md](https://github.com/bevry/watchr/blob/master/History.md#files) file
 
 
 ## License
 
 Licensed under the [MIT License](http://creativecommons.org/licenses/MIT/)
-<br/>Copyright &copy; 2011-2012 [Benjamin Arthur Lupton](http://balupton.com)
+<br/>Copyright &copy; 2012 [Bevry Pty Ltd](http://bevry.me)
+<br/>Copyright &copy; 2011 [Benjamin Lupton](http://balupton.com)

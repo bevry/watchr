@@ -1,4 +1,4 @@
-## Watchr
+## Watchr [![Build Status](https://secure.travis-ci.org/bevry/watchr.png?branch=master)](http://travis-ci.org/bevry/watchr)
 
 Watchr provides a better and normalised API between Node's 0.4 watchFile and 0.6's fsWatcher.
 

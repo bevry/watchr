@@ -1,6 +1,6 @@
 ## History
 
-- v2.0.1 April 19, 2012
+- v2.0.3 April 19, 2012
 	- Fixed a bug with closing watchers
 	- Now requires pre-compiled code
 

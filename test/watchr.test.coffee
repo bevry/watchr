@@ -1,6 +1,6 @@
 # Requires
 path = require('path')
-watchr = require(path.join __dirname, '..', 'lib', 'watchr.coffee')
+watchr = require(__dirname+'/../lib/watchr')
 assert = require('assert')
 balUtil = require('bal-util')
 fs = require('fs')

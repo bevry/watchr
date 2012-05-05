@@ -54,7 +54,7 @@ Watcher = class extends EventEmitter
 	# The method we will use to watch the files
 	# Preferably we use watchFile, however we may need to use watch in case watchFile doesn't exist (e.g. windows)
 	method: null
-	
+
 	# Now it's time to construct our watcher
 	# We give it a path, and give it some events to use
 	# Then we get to work with watching it
@@ -75,7 +75,7 @@ Watcher = class extends EventEmitter
 
 		# Options
 		@options = options
-		
+
 		# Event
 		if options.listener
 			@listen(options.listener)
@@ -102,10 +102,10 @@ Watcher = class extends EventEmitter
 
 				# Apply the stat
 				applyStat(stat)
-	
+
 
 	# Before we start watching, we'll have to setup the functions our watcher will need
-	
+
 	# Listen to the change event for us
 	listen: (listener) ->
 		# Listen
@@ -115,7 +115,7 @@ Watcher = class extends EventEmitter
 
 		# Chain
 		@
-	
+
 	# We need something to bubble events up from a child file all the way up the top
 	bubble: (args...) ->
 		# Prepare
@@ -209,7 +209,7 @@ Watcher = class extends EventEmitter
 						# It has changed, so let's emit a change event
 						console.log('determined change:',fileFullPath)  if debug
 						@emit('changed','change',fileFullPath,currentStat,previousStat)
-		
+
 		# Check if the file still exists
 		path.exists fileFullPath, (exists) ->
 			# Apply
@@ -233,7 +233,7 @@ Watcher = class extends EventEmitter
 
 		# Chain
 		@
-	
+
 	# We will need something to close our listener for removed or renamed files
 	# As renamed files are a bit difficult we will want to close and delete all the watchers for all our children too
 	# Essentially it is like a self-destruct without the body parts
@@ -253,7 +253,7 @@ Watcher = class extends EventEmitter
 			else if @method is 'watch'  and  @fswatcher
 				@fswatcher.close()
 				@fswatcher = null
-				
+
 			# Updated state
 			@state = 'closed'
 
@@ -271,7 +271,7 @@ Watcher = class extends EventEmitter
 		# Check
 		if watcher
 			watcher.close()
-			delete @children[index]
+			delete @children[fileRelativePath]
 
 		# Chain
 		@
@@ -305,7 +305,7 @@ Watcher = class extends EventEmitter
 				# Proceed to the next file
 				next?()
 		)
-	
+
 	# Setup the watching for our path
 	# If we are already watching this path then let's start again (call close)
 	# Then if we are a directory, let's recurse
@@ -351,7 +351,7 @@ Watcher = class extends EventEmitter
 				)
 			else
 				tasks.complete()
-			
+
 			# Watch the current file/directory
 			try
 				# Try first with fs.watchFile
@@ -363,7 +363,7 @@ Watcher = class extends EventEmitter
 				@fswatcher = fs.watch @path, (args...) ->
 					me.changed.apply(me,args)
 				@method = 'watch'
-			
+
 			# We are now watching so set the state as active
 			@state = 'active'
 			tasks.complete()

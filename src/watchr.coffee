@@ -388,53 +388,60 @@ Watcher = class extends EventEmitter
 #  (or use an existing one, and add the events)
 # Watcher also uses this too
 watch = (args...) ->
-	# Three arguments
-	# [path,options,next]
-	if args.length is 3
-		# Prepare
-		argTwo = args[1]
-		options = {}
+	# Arguments (all omittable):
+	#  - path: string
+	#  - options: object
+	#  - listener: function
+	#  - listeners: array of functions
+	#  - next: function (listener or listeners must be set, and this must be the last argument)
+	#
+	# You may specify multiple options hashes and multiple listeners arrays, but it is
+	# not recommended
 
-		# Single Event
-		if typeof argTwo is 'function'
-			options.listener = argTwo
-		# Multiple Events
-		else if Array.isArray(argTwo)
-			options.listeners = argTwo
-		# Options
-		else if typeof argTwo is 'object'
-			options = argTwo
+	options = {listeners:[]}
+	path = null
 
-		# Extract
-		options.path = args[0]
-		options.next = args[2]
+	for arg, i in args
+		if typeof arg is 'string'
+			# The last string in args always overrides the path
+			path = arg
 
-	# One argument
-	# [options]
-	else if args.length is 1
-		# Extract
-		argOne = args[0]
-		if typeof argOne is 'object'
-			options = argOne
-		else
-			options = {}
-			options.path = argOne
+		else if typeof arg is 'object'
+			# Objects always override options, but now we can specify multiple. Later
+			# invocations take precedence
+			options[k] = arg[k] for k of arg
+
+		else if typeof arg is 'function'
+			if i is args.length - 1 and (options.listener? or options.listeners?.length)
+				# A function is only the next callback if we have listener(s) AND it's
+				# the last arg
+				options.next = arg
+			else
+				# Otherwise, it's a listener
+				options.listeners.push arg
+
+		else if Array.isArray arg
+			# Arrays are always arrays of listeners
+			options.listeners.push listener for listener in arg
+
+	if path?
+		options.path = path
 
 	# Extract path
 	path = options.path
-	next = options.next
+	unless path?
+		throw new Error "No path specified"
 
 	# Check if we are already watching that path
 	if watchers[path]?
 		# We do, so let's use that one instead
 		watcher = watchers[path]
-		next?(null,watcher)
-		return watcher
+		options.next?(null,watcher)
 	else
 		# We don't, so let's create a new one
 		watcher = new Watcher(options)
 		watchers[path] = watcher
-		return watcher
+	return watcher
 
 
 # Now let's provide node.js with our public API

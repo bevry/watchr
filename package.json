@@ -26,22 +26,21 @@
 	"engines" : {
 		"node": ">=0.4.0"
 	},
+	"engines" : {
+		"node": ">=0.4.0"
+	},
 	"dependencies": {
-		"bal-util": "1.5.x"
+		"bal-util": "1.9.x"
 	},
 	"devDependencies": {
 		"coffee-script": "1.3.x",
-		"docco": "0.3.x",
-		"mocha": "1.0.x"
-	},
-	"bin": {
-		"watchr": "./bin/watchr"
+		"joe": "1.0.x"
 	},
 	"directories": {
-		"lib": "lib"
+		"lib": "./out/lib"
 	},
 	"scripts": {
-		"test": "node ./node_modules/mocha/bin/mocha"
+		"test": "node ./out/test/everything.test.js --joe-reporter=list"
 	},
-	"main": "./lib/watchr"
+	"main": "./out/lib/watchr"
 }

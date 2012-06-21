@@ -7,9 +7,13 @@ The source code here is written as an experiment of literate programming
 Which means you would be able to understand it, without knowing code
 ###
 
+# Require the node.js path module
+# This provides us with what we need to interact with file paths
+pathUtil = require('path')
+
 # Require the node.js file system module
 # This provides us with what we need to interact with the file system (aka files and directories)
-fs = require('fs')
+fsUtil = require('fs')
 
 # Require the node.js event emitter
 # This provides us with the event system that we use for binding and trigger events
@@ -37,7 +41,7 @@ Watcher = class extends EventEmitter
 	# Is it a directory or not?
 	isDirectory: null
 
-	# Our fs.stat object, it contains things like change times, size, and is it a directory
+	# Our fsUtil.stat object, it contains things like change times, size, and is it a directory
 	stat: null
 
 	# The node.js file watcher instance, we have to open and close this, it is what notifies us of the events
@@ -55,45 +59,48 @@ Watcher = class extends EventEmitter
 	# Preferably we use watchFile, however we may need to use watch in case watchFile doesn't exist (e.g. windows)
 	method: null
 
+	# Configuration
+	config: null
+
 	# Now it's time to construct our watcher
 	# We give it a path, and give it some events to use
 	# Then we get to work with watching it
 	# next()
-	constructor: (options) ->
+	constructor: (config,next) ->
 		# Prepare
-		options or= {}
+		[config,next] = balUtil.extractOptsAndCallback(config,next)
 		watcher = @
 		@children = {}
 		applyStat = (stat) =>
 			@stat = stat
 			@isDirectory = stat.isDirectory()
 			@watch (err) ->
-				options.next?(err,watcher)
+				config.next?(err,watcher)
 
 		# Path
-		@path = options.path
+		@path = config.path
 
 		# Options
-		@options = options
+		@config = config
 
 		# Event
-		if options.listener
-			@listen(options.listener)
+		if config.listener
+			@listen(config.listener)
 
 		# Events
-		if options.listeners
-			for listener in options.listeners
+		if config.listeners
+			for listener in config.listeners
 				@listen(listener)
 
 		# Stat
-		if options.stat
+		if config.stat
 			# We already have a stat
-			applyStat(options.stat)
+			applyStat(config.stat)
 		else
 			# Fetch a stat
-			fs.stat @path, (err,stat) =>
+			fsUtil.stat config.path, (err,stat) ->
 				# Check if we are no longer necessary
-				if @state is 'closed'
+				if watcher.state is 'closed'
 					return
 
 				# Check if an error occured
@@ -190,15 +197,15 @@ Watcher = class extends EventEmitter
 					if @isDirectory
 						if isTheSame() is false
 							# Check for new files
-							fs.readdir fileFullPath, (err,newFileRelativePaths) =>
+							fsUtil.readdir fileFullPath, (err,newFileRelativePaths) =>
 								throw err  if err
 								balUtil.each newFileRelativePaths, (newFileRelativePath) =>
 									if @children[newFileRelativePath]?
 										# already exists
 									else
 										# new file
-										newFileFullPath = path.join(fileFullPath,newFileRelativePath)
-										fs.stat newFileFullPath, (err,newFileStat) =>
+										newFileFullPath = pathUtil.join(fileFullPath,newFileRelativePath)
+										fsUtil.stat newFileFullPath, (err,newFileStat) =>
 											throw err  if err
 											console.log('determined new:',newFileFullPath)  if debug
 											@emit('changed','new',newFileFullPath,newFileStat,null)
@@ -211,13 +218,13 @@ Watcher = class extends EventEmitter
 						@emit('changed','change',fileFullPath,currentStat,previousStat)
 
 		# Check if the file still exists
-		path.exists fileFullPath, (exists) ->
+		balUtil.exists fileFullPath, (exists) ->
 			# Apply
 			fileExists = exists
 
 			# If the file still exists, then update the stat
 			if fileExists
-				fs.stat fileFullPath, (err,stat) ->
+				fsUtil.stat fileFullPath, (err,stat) ->
 					# Check
 					throw err  if err
 
@@ -249,7 +256,7 @@ Watcher = class extends EventEmitter
 		if @state isnt 'closed'
 			# Close listener
 			if @method is 'watchFile'
-				fs.unwatchFile(@path)
+				fsUtil.unwatchFile(@path)
 			else if @method is 'watch'  and  @fswatcher
 				@fswatcher.close()
 				@fswatcher = null
@@ -280,7 +287,7 @@ Watcher = class extends EventEmitter
 	watchChild: (fileFullPath,fileRelativePath,fileStat,next) ->
 		# Prepare
 		me = @
-		options = @options
+		config = @config
 
 		# Watch the file
 		watch(
@@ -291,8 +298,8 @@ Watcher = class extends EventEmitter
 
 			# Options
 			stat: fileStat
-			ignoreHiddenFiles: options.ignoreHiddenFiles
-			ignorePatterns: options.ignorePatterns
+			ignoreHiddenFiles: config.ignoreHiddenFiles
+			ignorePatterns: config.ignorePatterns
 
 			# Next
 			next: (err,watcher) ->
@@ -315,7 +322,7 @@ Watcher = class extends EventEmitter
 	watch: (next) ->
 		# Prepare
 		me = @
-		options = @options
+		config = @config
 		console.log "watch: #{@path}"  if debug
 
 		# Close our all watch listeners
@@ -335,8 +342,8 @@ Watcher = class extends EventEmitter
 					path: @path
 
 					# Options
-					ignoreHiddenFiles: options.ignoreHiddenFiles
-					ignorePatterns: options.ignorePatterns
+					ignoreHiddenFiles: config.ignoreHiddenFiles
+					ignorePatterns: config.ignorePatterns
 					recurse: false
 
 					# Next
@@ -354,13 +361,13 @@ Watcher = class extends EventEmitter
 
 			# Watch the current file/directory
 			try
-				# Try first with fs.watchFile
-				fs.watchFile @path, (args...) ->
+				# Try first with fsUtil.watchFile
+				fsUtil.watchFile @path, (args...) ->
 					me.changed.apply(me,args)
 				@method = 'watchFile'
 			catch err
-				# Then try with fs.watch
-				@fswatcher = fs.watch @path, (args...) ->
+				# Then try with fsUtil.watch
+				@fswatcher = fsUtil.watch @path, (args...) ->
 					me.changed.apply(me,args)
 				@method = 'watch'
 
@@ -369,7 +376,7 @@ Watcher = class extends EventEmitter
 			tasks.complete()
 
 		# Check if we still exist
-		path.exists @path, (exists) ->
+		balUtil.exists @path, (exists) ->
 			# Check
 			unless exists
 				# We don't exist anymore, move along
@@ -382,59 +389,56 @@ Watcher = class extends EventEmitter
 		# Chain
 		@
 
+# Create a new watchr instance or use one from cache
+createWatcher = (opts,next) ->
+	# Prepare
+	[opts,next] = balUtil.extractOptsAndCallback(opts,next)
+	{path} = opts
+	watchr = null
 
-# Provide our interface to the applications that use watchr
-# This will create our new Watcher class for the path we want
-#  (or use an existing one, and add the events)
-# Watcher also uses this too
-watch = (args...) ->
-	# Three arguments
-	# [path,options,next]
-	if args.length is 3
-		# Prepare
-		argTwo = args[1]
-		options = {}
-
-		# Single Event
-		if typeof argTwo is 'function'
-			options.listener = argTwo
-		# Multiple Events
-		else if Array.isArray(argTwo)
-			options.listeners = argTwo
-		# Options
-		else if typeof argTwo is 'object'
-			options = argTwo
-
-		# Extract
-		options.path = args[0]
-		options.next = args[2]
-
-	# One argument
-	# [options]
-	else if args.length is 1
-		# Extract
-		argOne = args[0]
-		if typeof argOne is 'object'
-			options = argOne
-		else
-			options = {}
-			options.path = argOne
-
-	# Extract path
-	path = options.path
-	next = options.next
+	# Only create a watchr if the path exists
+	unless balUtil.existsSync(path)
+		return
 
 	# Check if we are already watching that path
 	if watchers[path]?
 		# We do, so let's use that one instead
 		watcher = watchers[path]
 		next?(null,watcher)
-		return watcher
 	else
 		# We don't, so let's create a new one
-		watcher = new Watcher(options)
+		watcher = new Watcher(opts)
 		watchers[path] = watcher
-		return watcher
+
+	# Return
+	return watcher
+
+# Provide our watch API interface, which supports one path or multiple paths
+watch = (opts,next) ->
+	# Prepare
+	[opts,next] = balUtil.extractOptsAndCallback(opts,next)
+	{paths} = opts
+	result = null
+	delete opts.paths
+
+	# We have multiple paths
+	if paths instanceof Array
+		# Prepare
+		result = []
+		tasks = new balUtil.Group (err) ->
+			next(err,result)
+		balUtil.each paths, (path) -> tasks.push (complete) ->
+			localOpts = balUtil.extend({},opts)
+			localOpts.path = path
+			localOpts.next = complete()
+			watchr = createWatcher(localOpts)
+			result.push(watchr)  if watchr
+		tasks.async()  # by async here we actually mean parallel, as our tasks are actually synchronous
+	else
+		result = createWatcher(opts,next)
+
+	# Return
+	return result
 
 
 # Now let's provide node.js with our public API

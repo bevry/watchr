@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-require(__dirname+'/../lib/bin');
+require(__dirname+'/../out/bin/watchr');

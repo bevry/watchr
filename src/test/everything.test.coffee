@@ -88,11 +88,14 @@ joe.suite 'watchr', (suite,test) ->
 
 	test 'detect level 3 changes', (done) ->
 		renameFile('someNewfile1','someNewfilea')  # unlink, new
-		writeFile('someNewDir1/someNewfile1')
-		writeFile('someNewDir1/someNewfile2')
-		checkChanges(4,done)
+		checkChanges(2,done)
 
 	test 'detect level 4 changes', (done) ->
+		writeFile('someNewDir1/someNewfile1')
+		writeFile('someNewDir1/someNewfile2')
+		checkChanges(2,done)
+
+	test 'detect level 5 changes', (done) ->
 		deleteFile('someNewDir1/someNewfile2')
 		checkChanges(1,done)
 

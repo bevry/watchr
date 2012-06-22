@@ -1,6 +1,6 @@
 #!/usr/bin/env coffee
 path = require('path')
-watchr = require(__dirname+'/watchr')
+watchr = require(__dirname+'/../lib/watchr')
 cwd = process.cwd()
 watchPath =
 	if process.argv.length is 3

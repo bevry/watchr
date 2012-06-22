@@ -14,6 +14,7 @@ wait = (delay,fn) -> setTimeout(fn,delay)
 
 # Test Data
 debug = false
+batchDelay = 10*1000
 outPath = pathUtil.join(__dirname,'../../test/out')
 writetree =
 	'a': 'a content'
@@ -34,7 +35,7 @@ joe.suite 'watchr', (suite,test) ->
 	# Change detection
 	actualChanges = 0
 	checkChanges = (expectedChanges,next) ->
-		wait 5000, ->
+		wait batchDelay, ->
 			assert.equal(actualChanges, expectedChanges, "#{actualChanges} changes ran out of #{expectedChanges} changes")
 			actualChanges = 0
 			next()
@@ -68,7 +69,7 @@ joe.suite 'watchr', (suite,test) ->
 
 	test 'start watching', (done) ->
 		watchr.watch path:outPath, listener:changeHappened, next:(err,watcher) ->
-			wait 5000, -> done(err)
+			wait batchDelay, -> done(err)
 
 	test 'detect level 1 changes', (done) ->
 		writeFile('a')

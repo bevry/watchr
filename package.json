@@ -1,6 +1,6 @@
 {
 	"name": "watchr",
-	"version": "2.0.3",
+	"version": "2.1.0",
 	"description": "Provides a better and normalised API between Node's 0.4 watchFile and 0.6's fsWatcher",
 	"homepage": "https://github.com/bevry/watchr",
 	"keywords": [
@@ -40,7 +40,7 @@
 		"lib": "./out/lib"
 	},
 	"scripts": {
-		"test": "node ./out/test/everything.test.js --joe-reporter=list"
+		"test": "node ./out/test/everything.test.js --joe-reporter=console"
 	},
 	"main": "./out/lib/watchr"
 }

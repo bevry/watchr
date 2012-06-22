@@ -1,5 +1,14 @@
 ## History
 
+- v2.1.0 June 22, 2012
+	- `watchr.watchr` changes
+		- now only accepts one argument which is an object
+		- added new `paths` property which is an array of multiple paths to watch
+		- will only watch paths that actually exist (before it use to throw an error)
+	- Fixed a few bugs
+	- Added support for node v0.7/v0.8
+	- Moved tests from Mocha to [Joe](https://github.com/bevry/joe)
+
 - v2.0.3 April 19, 2012
 	- Fixed a bug with closing watchers
 	- Now requires pre-compiled code

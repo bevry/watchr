@@ -9,10 +9,11 @@ joe = require('joe')
 # =====================================
 # Configuration
 
-# Config
-debug = false
+# Helpers
+wait = (delay,fn) -> setTimeout(fn,delay)
 
 # Test Data
+debug = false
 outPath = pathUtil.join(__dirname,'../../test/out')
 writetree =
 	'a': 'a content'
@@ -29,72 +30,71 @@ writetree =
 # -------------------------------------
 # Watchr
 
-joe.describe 'watchr', (describe,it) ->
-	it 'should work as expected', (done) ->
-		# Prepare
-		totalTasks = 14
-		doneTasks = 0
+joe.suite 'watchr', (suite,test) ->
+	# Change detection
+	actualChanges = 0
+	checkChanges = (expectedChanges,next) ->
+		wait 5000, ->
+			assert.equal(actualChanges, expectedChanges, "#{actualChanges} changes ran out of #{expectedChanges} changes")
+			actualChanges = 0
+			next()
+	changeHappened = (args...) ->
+		++actualChanges
+		console.log("a watch event occured: #{actualChanges}", args)  if debug
 
-		# Prepare
-		complete = ->
-			console.log "#{doneTasks} changes ran out of #{totalTasks} changes"  if debug
-			assert.equal doneTasks, totalTasks
-			done()
+	# Files changes
+	writeFile = (fileRelativePath) ->
+		fileFullPath = pathUtil.join(outPath,fileRelativePath)
+		fsUtil.writeFileSync(fileFullPath, "#{fileRelativePath} now has the random number #{Math.random()}")
+	deleteFile = (fileRelativePath) ->
+		fileFullPath = pathUtil.join(outPath,fileRelativePath)
+		fsUtil.unlinkSync(fileFullPath)
+	makeDir = (fileRelativePath) ->
+		fileFullPath = pathUtil.join(outPath,fileRelativePath)
+		fsUtil.mkdirSync(fileFullPath,'700')
+	renameFile = (fileRelativePath1,fileRelativePath2) ->
+		fileFullPath1 = pathUtil.join(outPath,fileRelativePath1)
+		fileFullPath2 = pathUtil.join(outPath,fileRelativePath2)
+		fsUtil.renameSync(fileFullPath1,fileFullPath2)
 
-		# Timeout
-		setTimeout(complete,55*1000)
+	# Tests
+	test 'remove old test files', (done) ->
+		balUtil.rmdirDeep outPath, (err) ->
+			done(err)
 
-		# Prepare handlers
-		changeHappened = (args...) ->
-			debugger
-			console.log 'a watch event occured:', doneTasks+1,':', args  if debug
-			++doneTasks
-
-		# Change a file
-		writeFile = (fileRelativePath) ->
-			fileFullPath = pathUtil.join(outPath,fileRelativePath)
-			fsUtil.writeFileSync(fileFullPath, "#{fileRelativePath} now has the random number #{Math.random()}")
-		deleteFile = (fileRelativePath) ->
-			fileFullPath = pathUtil.join(outPath,fileRelativePath)
-			fsUtil.unlinkSync(fileFullPath)
-		makeDir = (fileRelativePath) ->
-			fileFullPath = pathUtil.join(outPath,fileRelativePath)
-			fsUtil.mkdirSync(fileFullPath,'700')
-		renameFile = (fileRelativePath1,fileRelativePath2) ->
-			fileFullPath1 = pathUtil.join(outPath,fileRelativePath1)
-			fileFullPath2 = pathUtil.join(outPath,fileRelativePath2)
-			fsUtil.renameSync(fileFullPath1,fileFullPath2)
-		wait = (delay,fn) ->
-			setTimeout(fn,delay)
-
-		# Write test files
+	test 'write new test files', (done) ->
 		balUtil.writetree outPath, writetree, (err) ->
-			throw err  if err
+			done(err)
 
-			# Start watching
-			watchr.watch path:outPath, listener:changeHappened, next:(err,watcher) ->
-				throw err  if err
+	test 'start watching', (done) ->
+		watchr.watch path:outPath, listener:changeHappened, next:(err,watcher) ->
+			wait 5000, -> done(err)
 
-				# Tests
-				wait 5000, ->
-					writeFile('a')
-					writeFile('b/b-a')
-					writeFile('.c/c-a')
-					deleteFile('b/b-b')
+	test 'detect level 1 changes', (done) ->
+		writeFile('a')
+		writeFile('b/b-a')
+		writeFile('.c/c-a')
+		deleteFile('b/b-b')
+		checkChanges(4,done)
 
-					wait 5000, ->
-						writeFile('someNewfile1')
-						writeFile('someNewfile2')
-						writeFile('someNewfile3')
+	test 'detect level 2 changes', (done) ->
+		writeFile('someNewfile1')
+		writeFile('someNewfile2')
+		writeFile('someNewfile3')
+		makeDir('someNewDir1')
+		makeDir('someNewDir2')
+		checkChanges(5,done)
 
-						makeDir('someNewDir1')
-						makeDir('someNewDir2')
+	test 'detect level 3 changes', (done) ->
+		renameFile('someNewfile1','someNewfilea')  # unlink, new
+		writeFile('someNewDir1/someNewfile1')
+		writeFile('someNewDir1/someNewfile2')
+		checkChanges(4,done)
 
-						wait 5000, ->
-							renameFile('someNewfile1','someNewfilea')  # unlink, new
+	test 'detect level 4 changes', (done) ->
+		deleteFile('someNewDir1/someNewfile2')
+		checkChanges(1,done)
 
-							writeFile('someNewDir1/someNewfile1')
-							writeFile('someNewDir1/someNewfile2')
-
-							wait 5000, ->
-								deleteFile('someNewDir1/someNewfile2')
+	test 'completed', (done) ->
+		done()
+		joe.exit()

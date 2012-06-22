@@ -2,7 +2,18 @@
 
 Watchr provides a better and normalised API between Node's 0.4 watchFile and 0.6's fsWatcher.
 
-You install it via `npm istall watchr`, use it via `require('watchr').watch(path,listeners,next)`. Listeners will be triggered whenever a change is made on the directory or for anything inside it (including sub-directories and so on) and are in the following format `var listener = function(eventName,filePath,fileCurrentStat,filePreviousStat){}`
+You install it via `npm istall watchr`, use it via `require('watchr').watch(config)`. Configuration properties can be:
+
+- `path` a single path to watch,
+- `paths` an array of paths to watch
+- `listener` a single listener to fire when a change occurs
+- `listeners` an array of listeners to fire when a change occurs
+- `next` (optional) a completion callback to fire once the watchers have been setup
+- `stat` (optional) a file stat object to use for the path, instead of fetching a new one
+- `ignoreHiddenFiles` (optional) whether or not to ignored hidden files
+- `ignorePatterns` (optional) whether or not to ignore common undesirable file patterns
+
+ Listeners will be triggered whenever a change is made on the directory or for anything inside it (including sub-directories and so on) and are in the following format `var listener = function(eventName,filePath,fileCurrentStat,filePreviousStat){}`
 
 There are three types of events for your listeners at your disposal:
 
@@ -17,8 +28,11 @@ To wrap it all together, it would look like this:
 watchr = require('watchr')
 
 // Watch a directory or file
-watchr.watch(path,function(eventName,filePath,fileCurrentStat,filePreviousStat){
-	console.log('a watch event occured:',arguments);
+watchr.watch({
+	path: path,
+	listener: function(eventName,filePath,fileCurrentStat,filePreviousStat){
+		console.log('a watch event occured:',arguments);
+	}
 });
 ```
 

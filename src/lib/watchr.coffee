@@ -362,7 +362,7 @@ Watcher = class extends EventEmitter
 			# Watch the current file/directory
 			try
 				# Try first with fsUtil.watchFile
-				fsUtil.watchFile @path, (args...) ->
+				fsUtil.watchFile @path, interval: 100, (args...) ->
 					me.changed.apply(me,args)
 				@method = 'watchFile'
 			catch err

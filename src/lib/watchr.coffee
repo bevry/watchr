@@ -118,7 +118,7 @@ Watcher = class extends EventEmitter
 		# Listen
 		@removeListener('changed',listener)
 		@on('changed',listener)
-		console.log "added a listener: on #{@path}"  if debug
+		console.log("added a listener: on #{@path}")  if debug
 
 		# Chain
 		@
@@ -129,7 +129,7 @@ Watcher = class extends EventEmitter
 		[eventName,filename,currentStat,previousStat] = args
 
 		# Log
-		console.log "bubble: #{eventName}: #{filename} on #{@path}"  if debug
+		console.log("bubble: #{eventName}: #{filename} on #{@path}")  if debug
 
 		# Trigger
 		@emit('changed',eventName,filename,currentStat,previousStat)
@@ -165,8 +165,7 @@ Watcher = class extends EventEmitter
 		fileExists = null
 
 		# Log
-		console.log "watch event triggered on #{@path}"  if debug
-		#console.log args  if debug
+		console.log("watch event triggered on #{@path}\n",args)  if debug
 
 		# Prepare: is the same?
 		isTheSame = =>
@@ -181,6 +180,7 @@ Watcher = class extends EventEmitter
 			if !fileExists
 				console.log('determined unlink:',fileFullPath)  if debug
 				@emit('changed','unlink',fileFullPath,currentStat,previousStat)
+				@close()
 
 			# Otherwise, we still do exist
 			else
@@ -196,9 +196,10 @@ Watcher = class extends EventEmitter
 					# and if we are the same, then we should scan our children to look for renames and deletes
 					if @isDirectory
 						if isTheSame() is false
-							# Check for new files
+							# Scan children
 							fsUtil.readdir fileFullPath, (err,newFileRelativePaths) =>
 								throw err  if err
+								# Check for new files
 								balUtil.each newFileRelativePaths, (newFileRelativePath) =>
 									if @children[newFileRelativePath]?
 										# already exists
@@ -210,6 +211,17 @@ Watcher = class extends EventEmitter
 											console.log('determined new:',newFileFullPath)  if debug
 											@emit('changed','new',newFileFullPath,newFileStat,null)
 											@watchChild(newFileFullPath,newFileRelativePath,newFileStat)
+								# Check for deleted files
+								balUtil.each @children, (childFileWatcher,childFileRelativePath) =>
+									if childFileRelativePath in newFileRelativePaths
+										# still exists
+									else
+										# deleted file
+										childFileFullPath = childFileWatcher.path
+										console.log('determined unlink:',childFileRelativePath)  if debug
+										childFileWatcher.emit('changed','unlink',childFileFullPath,null,childFileWatcher.stat)
+										@closeChild(childFileRelativePath)
+
 
 					# If we are a file, lets simply emit the change event
 					else
@@ -245,24 +257,22 @@ Watcher = class extends EventEmitter
 	# As renamed files are a bit difficult we will want to close and delete all the watchers for all our children too
 	# Essentially it is like a self-destruct without the body parts
 	close: ->
-		return @  if @state is 'closed'
-		console.log "close: #{@path}"  if debug
+		return @  if @state in ['closed','pending']
+		console.log("close: #{@path} ", new Error('trace').stack)  if debug
 
 		# Close our children
 		for own childRelativePath,watchr of @children
 			@closeChild(childRelativePath)
 
-		# Close ourself
-		if @state isnt 'closed'
-			# Close listener
-			if @method is 'watchFile'
-				fsUtil.unwatchFile(@path)
-			else if @method is 'watch'  and  @fswatcher
-				@fswatcher.close()
-				@fswatcher = null
+		# Close listener
+		if @method is 'watchFile'
+			fsUtil.unwatchFile(@path)
+		else if @method is 'watch'  and  @fswatcher
+			@fswatcher.close()
+			@fswatcher = null
 
-			# Updated state
-			@state = 'closed'
+		# Updated state
+		@state = 'closed'
 
 		# Delete our watchers reference
 		delete watchers[@path]  if watchers[@path]?
@@ -294,6 +304,8 @@ Watcher = class extends EventEmitter
 			# Necessary
 			path: fileFullPath
 			listener: (args...) ->
+				if args.length > 3 and args[0] is 'changed' and args[1] is 'unlink' and args[2] is fileFullPath
+					@closeChild(fileRelativePath)
 				me.bubble(args...)
 
 			# Options
@@ -323,10 +335,12 @@ Watcher = class extends EventEmitter
 		# Prepare
 		me = @
 		config = @config
-		console.log "watch: #{@path}"  if debug
 
 		# Close our all watch listeners
 		@close()
+
+		# Log
+		console.log("watch: #{@path}", new Error('trace').stack)  if debug
 
 		# Prepare Start Watching
 		startWatching = =>
@@ -362,7 +376,10 @@ Watcher = class extends EventEmitter
 			# Watch the current file/directory
 			try
 				# Try first with fsUtil.watchFile
-				fsUtil.watchFile @path, interval: 100, (args...) ->
+				watchFileOpts =
+					persistant: config.persistant ? true
+					interval: config.interval ? 100
+				fsUtil.watchFile @path, watchFileOpts, (args...) ->
 					me.changed.apply(me,args)
 				@method = 'watchFile'
 			catch err

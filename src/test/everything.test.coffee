@@ -14,7 +14,7 @@ wait = (delay,fn) -> setTimeout(fn,delay)
 
 # Test Data
 debug = process.env.TRAVIS_NODE_VERSION?
-batchDelay = 5*1000
+batchDelay = 6*1000
 outPath = pathUtil.join(__dirname,'../../test/out')
 writetree =
 	'a': 'a content'
@@ -71,34 +71,40 @@ joe.suite 'watchr', (suite,test) ->
 		watchr.watch path:outPath, listener:changeHappened, next:(err,watcher) ->
 			wait batchDelay, -> done(err)
 
-	test 'detect level 1 changes', (done) ->
+	test 'detect write', (done) ->
 		writeFile('a')
 		writeFile('b/b-a')
 		writeFile('.c/c-a')
-		deleteFile('b/b-b')
-		checkChanges(4,done)
+		checkChanges(3,done)
 
-	test 'detect level 2 changes', (done) ->
+	test 'detect delete', (done) ->
+		deleteFile('b/b-b')
+		checkChanges(1,done)
+
+	test 'detect mkdir', (done) ->
+		makeDir('someNewDir1')
+		checkChanges(1,done)
+
+	test 'detect mkdir and write', (done) ->
 		writeFile('someNewfile1')
 		writeFile('someNewfile2')
 		writeFile('someNewfile3')
-		makeDir('someNewDir1')
 		makeDir('someNewDir2')
-		checkChanges(5,done)
+		checkChanges(4,done)
 
-	test 'detect level 3 changes', (done) ->
+	test 'detect rename', (done) ->
 		renameFile('someNewfile1','someNewfilea')  # unlink, new
 		checkChanges(2,done)
 
-	test 'detect level 4 changes', (done) ->
+	test 'detect subdir file write', (done) ->
 		writeFile('someNewDir1/someNewfile1')
 		writeFile('someNewDir1/someNewfile2')
 		checkChanges(2,done)
 
-	test 'detect level 5 changes', (done) ->
+	test 'detect subdir file delete', (done) ->
 		deleteFile('someNewDir1/someNewfile2')
 		checkChanges(1,done)
 
 	test 'completed', (done) ->
 		done()
-		joe.exit()
+		process.exit()

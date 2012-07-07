@@ -1,5 +1,9 @@
 ## History
 
+- v2.1.2 July 7, 2012
+	- Fixed spelling of `persistent`
+	- Explicitly set the defaults for the options `ignoreHiddenFiles` and `ignorePatterns`
+
 - v2.1.1 July 7, 2012
 	- Added support for `interval` and `persistant` options
 	- Improved unlink detection

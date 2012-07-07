@@ -8,10 +8,12 @@ You install it via `npm istall watchr`, use it via `require('watchr').watch(conf
 - `paths` an array of paths to watch
 - `listener` a single listener to fire when a change occurs
 - `listeners` an array of listeners to fire when a change occurs
-- `next` (optional) a completion callback to fire once the watchers have been setup
-- `stat` (optional) a file stat object to use for the path, instead of fetching a new one
-- `ignoreHiddenFiles` (optional) whether or not to ignored hidden files
-- `ignorePatterns` (optional) whether or not to ignore common undesirable file patterns
+- `next` (optional, defaults to `null`) a completion callback to fire once the watchers have been setup
+- `stat` (optional, defaults to `null`) a file stat object to use for the path, instead of fetching a new one
+- `ignoreHiddenFiles` (optional, defaults to `false`) whether or not to ignored files which filename starts with a `.`
+- `ignorePatterns` (optional, defaults to `false`) whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
+- `interval` (optional, defaults to `100`) for systems that poll to detect file changes, how often should it poll in millseconds
+- `persistent` (optional, defaults to `true`) whether or not we should keep the node process alive for as long as files are still being watched
 
  Listeners will be triggered whenever a change is made on the directory or for anything inside it (including sub-directories and so on) and are in the following format `var listener = function(eventName,filePath,fileCurrentStat,filePreviousStat){}`
 

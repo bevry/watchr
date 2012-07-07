@@ -83,6 +83,10 @@ Watcher = class extends EventEmitter
 
 		# Options
 		@config = config
+		@config.ignoreHiddenFiles ?= false
+		@config.ignorePatterns ?= false
+		@config.interval ?= 100
+		@config.persistent ?= true
 
 		# Event
 		if config.listener
@@ -378,8 +382,8 @@ Watcher = class extends EventEmitter
 			try
 				# Try first with fsUtil.watchFile
 				watchFileOpts =
-					persistant: config.persistant ? true
-					interval: config.interval ? 100
+					persistent: config.persistent
+					interval: config.interval
 				fsUtil.watchFile @path, watchFileOpts, (args...) ->
 					me.changed.apply(me,args)
 				@method = 'watchFile'

@@ -1,5 +1,10 @@
 ## History
 
+- v2.1.1 July 7, 2012
+	- Added support for `interval` and `persistant` options
+	- Improved unlink detection
+	- Optimised unlink handling
+
 - v2.1.0 June 22, 2012
 	- `watchr.watchr` changes
 		- now only accepts one argument which is an object

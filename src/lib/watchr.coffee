@@ -11,17 +11,17 @@ Which means you would be able to understand it, without knowing code
 # This provides us with what we need to interact with file paths
 pathUtil = require('path')
 
-# Require the node.js file system module
-# This provides us with what we need to interact with the file system (aka files and directories)
+# Require the node.js fs module
+# This provides us with what we need to interact with the file system
 fsUtil = require('fs')
-
-# Require the node.js event emitter
-# This provides us with the event system that we use for binding and trigger events
-EventEmitter = require('events').EventEmitter
 
 # Require the balUtil module
 # This provides us with various flow logic and path utilities
 balUtil = require('bal-util')
+
+# Require the node.js event emitter
+# This provides us with the event system that we use for binding and trigger events
+EventEmitter = require('events').EventEmitter
 
 # Let's set the debugging mode
 # We will use this later on when outputting messages that make our code easier to debug
@@ -41,7 +41,7 @@ Watcher = class extends EventEmitter
 	# Is it a directory or not?
 	isDirectory: null
 
-	# Our fsUtil.stat object, it contains things like change times, size, and is it a directory
+	# Our stat object, it contains things like change times, size, and is it a directory
 	stat: null
 
 	# The node.js file watcher instance, we have to open and close this, it is what notifies us of the events
@@ -52,7 +52,8 @@ Watcher = class extends EventEmitter
 	children: null  # {}
 
 	# We have to store the current state of the watcher and it is asynchronous (things can fire in any order)
-	# as such, we don't want to be doing particular things if this watcher is deactivated (closed)
+	# as such, we don't want to be doing particular things if this watcher is deactivated
+	# valid states are: pending, active, closed, unlink
 	state: 'pending'
 
 	# The method we will use to watch the files
@@ -98,14 +99,12 @@ Watcher = class extends EventEmitter
 			applyStat(config.stat)
 		else
 			# Fetch a stat
-			fsUtil.stat config.path, (err,stat) ->
+			balUtil.stat config.path, (err,stat) ->
 				# Check if we are no longer necessary
-				if watcher.state is 'closed'
-					return
+				return  if watcher.state isnt 'pending'
 
 				# Check if an error occured
-				if err
-					throw err
+				throw err  if err
 
 				# Apply the stat
 				applyStat(stat)
@@ -179,8 +178,7 @@ Watcher = class extends EventEmitter
 			# If we no longer exist, then we where deleted
 			if !fileExists
 				console.log('determined unlink:',fileFullPath)  if debug
-				@emit('changed','unlink',fileFullPath,currentStat,previousStat)
-				@close()
+				@close('unlink')
 
 			# Otherwise, we still do exist
 			else
@@ -197,7 +195,7 @@ Watcher = class extends EventEmitter
 					if @isDirectory
 						if isTheSame() is false
 							# Scan children
-							fsUtil.readdir fileFullPath, (err,newFileRelativePaths) =>
+							balUtil.readdir fileFullPath, (err,newFileRelativePaths) =>
 								throw err  if err
 								# Check for new files
 								balUtil.each newFileRelativePaths, (newFileRelativePath) =>
@@ -206,7 +204,7 @@ Watcher = class extends EventEmitter
 									else
 										# new file
 										newFileFullPath = pathUtil.join(fileFullPath,newFileRelativePath)
-										fsUtil.stat newFileFullPath, (err,newFileStat) =>
+										balUtil.stat newFileFullPath, (err,newFileStat) =>
 											throw err  if err
 											console.log('determined new:',newFileFullPath)  if debug
 											@emit('changed','new',newFileFullPath,newFileStat,null)
@@ -219,8 +217,7 @@ Watcher = class extends EventEmitter
 										# deleted file
 										childFileFullPath = childFileWatcher.path
 										console.log('determined unlink:',childFileRelativePath)  if debug
-										childFileWatcher.emit('changed','unlink',childFileFullPath,null,childFileWatcher.stat)
-										@closeChild(childFileRelativePath)
+										@closeChild(childFileRelativePath,'unlink')
 
 
 					# If we are a file, lets simply emit the change event
@@ -236,7 +233,7 @@ Watcher = class extends EventEmitter
 
 			# If the file still exists, then update the stat
 			if fileExists
-				fsUtil.stat fileFullPath, (err,stat) ->
+				balUtil.stat fileFullPath, (err,stat) ->
 					# Check
 					throw err  if err
 
@@ -256,13 +253,13 @@ Watcher = class extends EventEmitter
 	# We will need something to close our listener for removed or renamed files
 	# As renamed files are a bit difficult we will want to close and delete all the watchers for all our children too
 	# Essentially it is like a self-destruct without the body parts
-	close: ->
-		return @  if @state in ['closed','pending']
+	close: (type) ->
+		return @  if @state isnt 'active'
 		console.log("close: #{@path} ", new Error('trace').stack)  if debug
 
 		# Close our children
 		for own childRelativePath,watchr of @children
-			@closeChild(childRelativePath)
+			@closeChild(childRelativePath,type)
 
 		# Close listener
 		if @method is 'watchFile'
@@ -272,7 +269,11 @@ Watcher = class extends EventEmitter
 			@fswatcher = null
 
 		# Updated state
-		@state = 'closed'
+		if type is 'unlink'
+			@emit('changed','unlink',@path,null,@stat)
+			@state = 'unlink'
+		else
+			@state = 'closed'
 
 		# Delete our watchers reference
 		delete watchers[@path]  if watchers[@path]?
@@ -281,13 +282,13 @@ Watcher = class extends EventEmitter
 		@
 
 	# Close a child
-	closeChild: (fileRelativePath) ->
+	closeChild: (fileRelativePath,type) ->
 		# Prepare
 		watcher = @children[fileRelativePath]
 
 		# Check
 		if watcher
-			watcher.close()
+			watcher.close(type)
 			delete @children[fileRelativePath]
 
 		# Chain
@@ -305,7 +306,7 @@ Watcher = class extends EventEmitter
 			path: fileFullPath
 			listener: (args...) ->
 				if args.length > 3 and args[0] is 'changed' and args[1] is 'unlink' and args[2] is fileFullPath
-					@closeChild(fileRelativePath)
+					@closeChild(fileRelativePath,'unlink')
 				me.bubble(args...)
 
 			# Options

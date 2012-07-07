@@ -37,7 +37,7 @@ watchr.watch({
 	},
 	next: (err,watcher){
 		if (err)  throw err;
-		console.log('watching setup successfully')
+		console.log('watching setup successfully');
 	}
 });
 ```

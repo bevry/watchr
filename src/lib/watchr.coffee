@@ -27,7 +27,7 @@ EventEmitter = require('events').EventEmitter
 # We will use this later on when outputting messages that make our code easier to debug
 # Note: when we publish the module, we want to set this as off, as we don't want the application using us
 #  to spurt our all our debug messages!
-debug = false
+debug = process.env.TRAVIS_NODE_VERSION?
 
 # Now to make watching files more convient and managed, we'll create a class which we can use to attach to each file
 # It'll provide us with the API and abstraction we need to accomplish difficult things like recursion

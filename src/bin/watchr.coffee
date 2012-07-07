@@ -12,7 +12,7 @@ watchr.watch(
 	path: watchPath,
 	listener: (args...) ->
 		console.log 'a watch event occured:', ++changes, ':', args
-	next: (err,wachter) ->
+	next: (err,watcher) ->
 		throw err  if err
 		console.log 'now watching:', watchPath
 )

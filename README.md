@@ -1,8 +1,11 @@
-## Watchr
+## Watchr; better file system watching for Node.js
 
-Watchr provides a better and normalised API between Node's 0.4 watchFile and 0.6's fsWatcher.
+Watchr wraps around the standard file system watching in Node.js to provide you with:
+- a normalised API between all the different node versions
+- nested/recursive file and directory watching
+- accurate and detailed events for file/directory changes, deletions and creations
 
-You install it via `npm istall watchr`, use it via `require('watchr').watch(config)`. Configuration properties can be:
+You install it via `npm istall watchr` and use it via `require('watchr').watch(config)`. Available configuration options are:
 
 - `path` a single path to watch,
 - `paths` an array of paths to watch
@@ -15,7 +18,7 @@ You install it via `npm istall watchr`, use it via `require('watchr').watch(conf
 - `interval` (optional, defaults to `100`) for systems that poll to detect file changes, how often should it poll in millseconds
 - `persistent` (optional, defaults to `true`) whether or not we should keep the node process alive for as long as files are still being watched
 
- Listeners will be triggered whenever a change is made on the directory or for anything inside it (including sub-directories and so on) and are in the following format `var listener = function(eventName,filePath,fileCurrentStat,filePreviousStat){}`
+Listeners will be triggered whenever a change is made on the directory or for anything inside it (including sub-directories and so on) and are in the following format `var listener = function(eventName,filePath,fileCurrentStat,filePreviousStat){}`
 
 There are three types of events for your listeners at your disposal:
 
@@ -34,11 +37,15 @@ watchr.watch({
 	path: path,
 	listener: function(eventName,filePath,fileCurrentStat,filePreviousStat){
 		console.log('a watch event occured:',arguments);
+	},
+	next: (err,watcher){
+		if (err)  throw err;
+		console.log('watching setup successfully')
 	}
 });
 ```
 
-You can test the above code snippet by installing watchr globally by running `npm install -g watchr` to install watchr, then `watchr [pathToWatch]` to watchr a particular path, and performing some file system modifications on that path.
+You can test the above code snippet by installing watchr globally by running `npm install -g watchr` to install watchr, then `watchr <pathToWatch>` to watchr a particular path, and performing some file system modifications on that path.
 
 Thanks for using Watchr!
 
@@ -55,6 +62,6 @@ You can discover the history inside the [History.md](https://github.com/bevry/wa
 
 ## License
 
-Licensed under the [MIT License](http://creativecommons.org/licenses/MIT/)
+Licensed under the incredibly [permissive](http://en.wikipedia.org/wiki/Permissive_free_software_licence) [MIT License](http://creativecommons.org/licenses/MIT/)
 <br/>Copyright &copy; 2012 [Bevry Pty Ltd](http://bevry.me)
 <br/>Copyright &copy; 2011 [Benjamin Lupton](http://balupton.com)

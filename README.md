@@ -1,9 +1,6 @@
 ## Watchr; better file system watching for Node.js
 
-Watchr wraps around the standard file system watching in Node.js to provide you with:
-- a normalised API between all the different node versions
-- nested/recursive file and directory watching
-- accurate and detailed events for file/directory changes, deletions and creations
+Watchr provides a normalised API the file watching APIs of different node versions, nested/recursive file and directory watching, and accurate detailed events for file/directory changes, deletions and creations.
 
 You install it via `npm istall watchr` and use it via `require('watchr').watch(config)`. Available configuration options are:
 

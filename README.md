@@ -4,7 +4,7 @@ Watchr provides a normalised API the file watching APIs of different node versio
 
 You install it via `npm istall watchr` and use it via `require('watchr').watch(config)`. Available configuration options are:
 
-- `path` a single path to watch,
+- `path` a single path to watch
 - `paths` an array of paths to watch
 - `listener` a single listener to fire when a change occurs
 - `listeners` an array of listeners to fire when a change occurs

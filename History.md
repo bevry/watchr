@@ -1,5 +1,8 @@
 ## History
 
+- v2.1.3 August 10, 2012
+	- Re-added markdown files to npm distribution as they are required for the npm website
+
 - v2.1.2 July 7, 2012
 	- Fixed spelling of `persistent`
 	- Explicitly set the defaults for the options `ignoreHiddenFiles` and `ignorePatterns`

@@ -1,20 +1,21 @@
 # If you change something here, be sure to change it in package.json's scripts as well
 
+BIN=node_modules/.bin/
+COFFEE=$(BIN)coffee
+
 dev:
-	./node_modules/.bin/coffee -w -o out/ -c src/
+	$(COFFEE) -cbwo out src
 
 compile:
-	./node_modules/.bin/coffee -o out/ -c src/
+	$(COFFEE) -cbo out src
 
 clean:
 	rm -Rf lib node_modules/ npm-debug.log
 	npm install
 
-test-prepare:
-	make compile
+test-prepare: compile
 
-test:
-	make test-prepare
+test: test-prepare
 	npm test
 
-.PHONY: dev compile clean test-prepare test
+.PHONY: test

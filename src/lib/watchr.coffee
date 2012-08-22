@@ -426,6 +426,9 @@ createWatcher = (opts,next) ->
 	if watchers[path]?
 		# We do, so let's use that one instead
 		watcher = watchers[path]
+		# and add the new listeners
+		watcher.listen opts.listener if opts.listener
+		watcher.listen listener for listener in opts.listeners if opts.listeners
 		next?(null,watcher)
 	else
 		# We don't, so let's create a new one

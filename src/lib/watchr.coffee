@@ -451,11 +451,11 @@ watch = (opts,next) ->
 		# Prepare
 		result = []
 		tasks = new balUtil.Group (err) ->
-			next(err,result)
+			next?(err,result)
 		balUtil.each paths, (path) -> tasks.push (complete) ->
 			localOpts = balUtil.extend({},opts)
 			localOpts.path = path
-			localOpts.next = complete()
+			localOpts.next = complete
 			watchr = createWatcher(localOpts)
 			result.push(watchr)  if watchr
 		tasks.async()  # by async here we actually mean parallel, as our tasks are actually synchronous

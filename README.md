@@ -35,7 +35,7 @@ watchr.watch({
 	listener: function(eventName,filePath,fileCurrentStat,filePreviousStat){
 		console.log('a watch event occured:',arguments);
 	},
-	next: (err,watcher){
+	next: function(err,watcher){
 		if (err)  throw err;
 		console.log('watching setup successfully');
 	}

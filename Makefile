@@ -1,20 +1,57 @@
-# If you change something here, be sure to change it in package.json's scripts as well
+# If you change something here, be sure to reflect the changes in:
+# - the scripts section of the package.json file
+# - the .travis.yml file
 
+# -----------------
+# Variables
+
+BIN=node_modules/.bin/
+COFFEE=$(BIN)coffee
+
+
+# -----------------
+# Documentation
+
+# Usage: coffee [options] path/to/script.coffee -- [args]
+# -b, --bare         compile without a top-level function wrapper
+# -c, --compile      compile to JavaScript and save as .js files
+# -o, --output       set the output directory for compiled JavaScript
+# -w, --watch        watch scripts for changes and rerun commands
+
+
+# -----------------
+# Commands
+
+# Watch and recompile our files
 dev:
-	./node_modules/.bin/coffee -w -o out/ -c src/
+	$(COFFEE) -cbwo out src
 
+# Compile our files
 compile:
-	./node_modules/.bin/coffee -o out/ -c src/
+	$(COFFEE) -cbo out src
 
+# Clean up
 clean:
-	rm -Rf lib node_modules/ npm-debug.log
+	rm -Rf out node_modules npm-debug.log
+
+# Install
+install:
 	npm install
 
-test-prepare:
-	make compile
+# Reset
+reset:
+	clean
+	install
 
+# Ensure everything is ready for our tests to run
+test-prepare:
+	install
+	compile
+
+# Run our tests
 test:
-	make test-prepare
 	npm test
 
-.PHONY: dev compile clean test-prepare test
+
+# Ensure the listed commands always re-run and are never cached
+.PHONY: dev compile clean install reset test-prepare test

@@ -76,7 +76,7 @@ Watcher = class extends EventEmitter
 			@stat = stat
 			@isDirectory = stat.isDirectory()
 			@watch (err) ->
-				config.next?(err,watcher)
+				next?(err,watcher)
 
 		# Path
 		@path = config.path
@@ -415,7 +415,7 @@ Watcher = class extends EventEmitter
 createWatcher = (opts,next) ->
 	# Prepare
 	[opts,next] = balUtil.extractOptsAndCallback(opts,next)
-	{path} = opts
+	{path,listener,listeners} = opts
 	watchr = null
 
 	# Only create a watchr if the path exists
@@ -426,11 +426,19 @@ createWatcher = (opts,next) ->
 	if watchers[path]?
 		# We do, so let's use that one instead
 		watcher = watchers[path]
+		# and add the new listeners if we have any
+		if listener
+			watcher.listen(listener)
+		if listeners
+			for _listener in listeners
+				watcher.listen(_listener)
+		# as we don't create a new watcher, we must fire the next callback ourselves
 		next?(null,watcher)
 	else
 		# We don't, so let's create a new one
 		watcher = new Watcher(opts)
 		watchers[path] = watcher
+		# next is fired by the Watcher constructor
 
 	# Return
 	return watcher
@@ -448,11 +456,11 @@ watch = (opts,next) ->
 		# Prepare
 		result = []
 		tasks = new balUtil.Group (err) ->
-			next(err,result)
+			next?(err,result)
 		balUtil.each paths, (path) -> tasks.push (complete) ->
 			localOpts = balUtil.extend({},opts)
 			localOpts.path = path
-			localOpts.next = complete()
+			localOpts.next = complete
 			watchr = createWatcher(localOpts)
 			result.push(watchr)  if watchr
 		tasks.async()  # by async here we actually mean parallel, as our tasks are actually synchronous

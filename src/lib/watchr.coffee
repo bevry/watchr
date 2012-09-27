@@ -76,7 +76,7 @@ Watcher = class extends EventEmitter
 			@stat = stat
 			@isDirectory = stat.isDirectory()
 			@watch (err) ->
-				config.next?(err,watcher)
+				next?(err,watcher)
 
 		# Path
 		@path = config.path
@@ -432,13 +432,15 @@ createWatcher = (opts,next) ->
 		if listeners
 			for _listener in listeners
 				watcher.listen(_listener)
+		# as we don't create a new watcher, we must fire the next callback ourselves
+		next?(null,watcher)
 	else
 		# We don't, so let's create a new one
 		watcher = new Watcher(opts)
 		watchers[path] = watcher
+		# next is fired by the Watcher constructor
 
 	# Return
-	next?(null,watcher)
 	return watcher
 
 # Provide our watch API interface, which supports one path or multiple paths

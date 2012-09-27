@@ -415,7 +415,7 @@ Watcher = class extends EventEmitter
 createWatcher = (opts,next) ->
 	# Prepare
 	[opts,next] = balUtil.extractOptsAndCallback(opts,next)
-	{path} = opts
+	{path,listener,listeners} = opts
 	watchr = null
 
 	# Only create a watchr if the path exists
@@ -426,16 +426,19 @@ createWatcher = (opts,next) ->
 	if watchers[path]?
 		# We do, so let's use that one instead
 		watcher = watchers[path]
-		# and add the new listeners
-		watcher.listen opts.listener if opts.listener
-		watcher.listen listener for listener in opts.listeners if opts.listeners
-		next?(null,watcher)
+		# and add the new listeners if we have any
+		if listener
+			watcher.listen(listener)
+		if listeners
+			for _listener in listeners
+				watcher.listen(_listener)
 	else
 		# We don't, so let's create a new one
 		watcher = new Watcher(opts)
 		watchers[path] = watcher
 
 	# Return
+	next?(null,watcher)
 	return watcher
 
 # Provide our watch API interface, which supports one path or multiple paths

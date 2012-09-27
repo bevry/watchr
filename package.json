@@ -31,7 +31,7 @@
 		"node": ">=0.4.0"
 	},
 	"dependencies": {
-		"bal-util": "1.11.x"
+		"bal-util": "1.13.x"
 	},
 	"devDependencies": {
 		"coffee-script": "1.3.x",

@@ -40,13 +40,13 @@ install:
 
 # Reset
 reset:
-	clean
-	install
+	make clean
+	make install
 
-# Ensure everything is ready for our tests to run
+# Ensure everything is ready for our tests (used by things like travis)
 test-prepare:
-	install
-	compile
+	make install
+	make compile
 
 # Run our tests
 test:

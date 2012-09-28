@@ -1,8 +1,12 @@
 ## History
 
+- v2.1.5 September 29, 2012
+	- Fixed completion callback not firing when trying to watch a path that doesn't exist
+
 - v2.1.4 September 27, 2012
 	- Fixed new listeners not being added for directories that have already been watched
-		- Thanks to [pull request #14](https://github.com/bevry/watchr/pull/14) by [Casey Foster](https://github.com/caseywebdev)
+	- Fixed completion callbacks happening too soon
+	- Thanks to [pull request #14](https://github.com/bevry/watchr/pull/14) by [Casey Foster](https://github.com/caseywebdev)
 
 - v2.1.3 August 10, 2012
 	- Re-added markdown files to npm distribution as they are required for the npm website

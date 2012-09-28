@@ -420,6 +420,7 @@ createWatcher = (opts,next) ->
 
 	# Only create a watchr if the path exists
 	unless balUtil.existsSync(path)
+		next?(null,watcher)
 		return
 
 	# Check if we are already watching that path
@@ -444,6 +445,9 @@ createWatcher = (opts,next) ->
 	return watcher
 
 # Provide our watch API interface, which supports one path or multiple paths
+# If you are passing in multiple paths
+#   do not rely on the return result containing all of the watchers
+#   you must rely on the result inside the completion callback instead
 watch = (opts,next) ->
 	# Prepare
 	[opts,next] = balUtil.extractOptsAndCallback(opts,next)
@@ -457,12 +461,13 @@ watch = (opts,next) ->
 		result = []
 		tasks = new balUtil.Group (err) ->
 			next?(err,result)
-		balUtil.each paths, (path) -> tasks.push (complete) ->
-			localOpts = balUtil.extend({},opts)
-			localOpts.path = path
-			localOpts.next = complete
-			watchr = createWatcher(localOpts)
-			result.push(watchr)  if watchr
+		for path in paths
+			tasks.push {path}, (complete) ->
+				localOpts = balUtil.extend({},opts)
+				localOpts.path = @path
+				localOpts.next = complete
+				watchr = createWatcher(localOpts)
+				result.push(watchr)  if watchr
 		tasks.async()  # by async here we actually mean parallel, as our tasks are actually synchronous
 	else
 		result = createWatcher(opts,next)

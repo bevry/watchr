@@ -1,5 +1,9 @@
 ## History
 
+- v2.1.6 November 6, 2012
+	- Added missing `bin` configuration
+		- Fixes [#16](https://github.com/bevry/watchr/issues/16) thanks to [pull request #17](https://github.com/bevry/watchr/pull/17) by [Robson Roberto Souza Peixoto](https://github.com/robsonpeixoto)
+
 - v2.1.5 September 29, 2012
 	- Fixed completion callback not firing when trying to watch a path that doesn't exist
 

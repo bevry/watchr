@@ -1,6 +1,6 @@
 {
 	"name": "watchr",
-	"version": "2.1.5",
+	"version": "2.1.6",
 	"description": "Better file system watching for Node.js",
 	"homepage": "https://github.com/bevry/watchr",
 	"keywords": [
@@ -16,7 +16,8 @@
 	],
 	"contributors": [
 		"Benjamin Lupton <b@lupton.cc> (http://balupton.com)",
-		"Casey Foster (https://github.com/caseywebdev)"
+		"Casey Foster (https://github.com/caseywebdev)",
+		"Robson Roberto Souza Peixoto <robsonpeixoto@gmail.com> (https://github.com/robsonpeixoto)"
 	],
 	"bugs": {
 		"url": "https://github.com/bevry/watchr/issues"
@@ -32,17 +33,17 @@
 		"bal-util": "1.13.x"
 	},
 	"devDependencies": {
-		"coffee-script": "1.3.x",
-		"joe": "1.0.x"
+		"coffee-script": "1.4.x",
+		"joe": "1.1.x"
 	},
 	"directories": {
 		"lib": "./out/lib"
 	},
+	"bin": {
+		"watchr": "./bin/watchr"
+	},
 	"scripts": {
 		"test": "node ./out/test/everything.test.js --joe-reporter=console"
-	},
-	"bin": {
-		"watchr": "bin/watchr"
 	},
 	"main": "./out/lib/watchr"
 }

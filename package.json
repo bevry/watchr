@@ -28,9 +28,6 @@
 	"engines" : {
 		"node": ">=0.4.0"
 	},
-	"engines" : {
-		"node": ">=0.4.0"
-	},
 	"dependencies": {
 		"bal-util": "1.13.x"
 	},
@@ -43,6 +40,9 @@
 	},
 	"scripts": {
 		"test": "node ./out/test/everything.test.js --joe-reporter=console"
+	},
+	"bin": {
+		"watchr": "bin/watchr"
 	},
 	"main": "./out/lib/watchr"
 }

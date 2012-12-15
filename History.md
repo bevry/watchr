@@ -1,5 +1,14 @@
 ## History
 
+- v2.2.0 December 15, 2012
+	- We now ignore common ignore patterns by default
+	-  `ignorePatterns` configuration option renamed to `ignoreCommonPatterns`
+	-  Added new `ignoreCustomPatterns` configuration option
+	- Updated dependencies
+		-  [bal-util](https://github.com/balupton/bal-util) from 1.13.x to 1.15.x
+	- Closes [issue #22](https://github.com/bevry/watchr/issues/22) and [issue #21](https://github.com/bevry/watchr/issues/21)
+		- Thanks [Andrew Petersen](https://github.com/kirbysayshi), [Sascha Depold](https://github.com/sdepold), [Raynos](https://github.com/Raynos), and [Prajwalit](https://github.com/prajwalit) for your help!
+
 - v2.1.6 November 6, 2012
 	- Added missing `bin` configuration
 		- Fixes [#16](https://github.com/bevry/watchr/issues/16) thanks to [pull request #17](https://github.com/bevry/watchr/pull/17) by [Robson Roberto Souza Peixoto](https://github.com/robsonpeixoto)

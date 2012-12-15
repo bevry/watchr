@@ -84,7 +84,8 @@ Watcher = class extends EventEmitter
 		# Options
 		@config = config
 		@config.ignoreHiddenFiles ?= false
-		@config.ignorePatterns ?= false
+		@config.ignoreCommonPatterns ?= true
+		@config.ignoreCustomPatterns ?= null
 		@config.interval ?= 100
 		@config.persistent ?= true
 
@@ -316,7 +317,8 @@ Watcher = class extends EventEmitter
 			# Options
 			stat: fileStat
 			ignoreHiddenFiles: config.ignoreHiddenFiles
-			ignorePatterns: config.ignorePatterns
+			ignoreCommonPatterns: config.ignoreCommonPatterns
+			ignoreCustomPatterns: config.ignoreCustomPatterns
 
 			# Next
 			next: (err,watcher) ->
@@ -362,7 +364,8 @@ Watcher = class extends EventEmitter
 
 					# Options
 					ignoreHiddenFiles: config.ignoreHiddenFiles
-					ignorePatterns: config.ignorePatterns
+					ignoreCommonPatterns: config.ignoreCommonPatterns
+					ignoreCustomPatterns: config.ignoreCustomPatterns
 					recurse: false
 
 					# Next

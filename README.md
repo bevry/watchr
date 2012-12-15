@@ -11,7 +11,8 @@ You install it via `npm istall watchr` and use it via `require('watchr').watch(c
 - `next` (optional, defaults to `null`) a completion callback to fire once the watchers have been setup
 - `stat` (optional, defaults to `null`) a file stat object to use for the path, instead of fetching a new one
 - `ignoreHiddenFiles` (optional, defaults to `false`) whether or not to ignored files which filename starts with a `.`
-- `ignorePatterns` (optional, defaults to `false`) whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
+- `ignoreCommonPatterns` (optional, defaults to `true`) whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
+- `ignoreCustomPatterns` (optional, defaults to `null`) any custom ignore patterns that you would also like to ignore along with the common patterns
 - `interval` (optional, defaults to `100`) for systems that poll to detect file changes, how often should it poll in millseconds
 - `persistent` (optional, defaults to `true`) whether or not we should keep the node process alive for as long as files are still being watched
 

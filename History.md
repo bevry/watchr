@@ -1,5 +1,10 @@
 ## History
 
+- v2.2.1 December 16, 2012
+	- Fixed sub directory scans ignoring our ignore patterns
+	- Updated dependencies
+		-  [bal-util](https://github.com/balupton/bal-util) from 1.15.x to ~1.15.2
+
 - v2.2.0 December 15, 2012
 	- We now ignore common ignore patterns by default
 	-  `ignorePatterns` configuration option renamed to `ignoreCommonPatterns`

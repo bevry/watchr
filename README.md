@@ -2,7 +2,7 @@
 
 Watchr provides a normalised API the file watching APIs of different node versions, nested/recursive file and directory watching, and accurate detailed events for file/directory changes, deletions and creations.
 
-You install it via `npm istall watchr` and use it via `require('watchr').watch(config)`. Available configuration options are:
+You install it via `npm install watchr` and use it via `require('watchr').watch(config)`. Available configuration options are:
 
 - `path` a single path to watch
 - `paths` an array of paths to watch

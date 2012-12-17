@@ -1,14 +1,20 @@
-## Watchr; better file system watching for Node.js
+## Watchr: better file system watching for Node.js
 
-Watchr provides a normalised API the file watching APIs of different node versions, nested/recursive file and directory watching, and accurate detailed events for file/directory changes, deletions and creations.
+Watchr provides a normalised API the file watching APIs of different node versions, nested/recursive file and directory watching, and accurate detailed events for file/directory creations, updates, and deletions.
 
 You install it via `npm install watchr` and use it via `require('watchr').watch(config)`. Available configuration options are:
 
 - `path` a single path to watch
 - `paths` an array of paths to watch
-- `listener` a single listener to fire when a change occurs
-- `listeners` an array of listeners to fire when a change occurs
-- `next` (optional, defaults to `null`) a completion callback to fire once the watchers have been setup
+- `listener` a single change listener to fire when a change occurs
+- `listeners` an array of listeners to fire when a change occurs, overloaded to also accept
+	- `changeListener` a single change listener
+	- `[changeListener]` an array of change listeners
+	- `{eventName:eventListener}` an object keyed with the event names and valued with a single event listener
+	- `{eventName:[eventListener]}` an object keyed with the event names and valued with an array of event listeners
+- `next` (optional, defaults to `null`) a completion callback to fire once the watchers have been setup, arguments are:
+	- when using the `path` configuration option: `err, watcherInstance`
+	- when using the `paths` configuration option: `err, [watcherInstance,...]` 
 - `stat` (optional, defaults to `null`) a file stat object to use for the path, instead of fetching a new one
 - `ignoreHiddenFiles` (optional, defaults to `false`) whether or not to ignored files which filename starts with a `.`
 - `ignoreCommonPatterns` (optional, defaults to `true`) whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
@@ -16,13 +22,16 @@ You install it via `npm install watchr` and use it via `require('watchr').watch(
 - `interval` (optional, defaults to `100`) for systems that poll to detect file changes, how often should it poll in millseconds
 - `persistent` (optional, defaults to `true`) whether or not we should keep the node process alive for as long as files are still being watched
 
-Listeners will be triggered whenever a change is made on the directory or for anything inside it (including sub-directories and so on) and are in the following format `var listener = function(eventName,filePath,fileCurrentStat,filePreviousStat){}`
 
-There are three types of events for your listeners at your disposal:
+The following events are available to your via the listeners:
 
-- `change`: a file has been modified
-- `new`: a new file or directory has been created
-- `unlink`: a file or a directory has been removed
+- `log` for debugging, receives the arguments `logLevel ,args...`
+- `error` for gracefully listening to error events, receives the arguments `err`
+- `watching` for when watching of the path has completed, receives the arguments `err, isWatching`
+- `change` for listening to change events, receives the arguments `changeType, fullPath, currentStat, previousStat`, received arguments will be:
+	- for updated files: `'update', fullPath, currentStat, previousStat`
+	- for created files: `'create', fullPath, currentStat, null`
+	- for deleted files: `'delete', fullPath, null, previousStat`
 
 To wrap it all together, it would look like this:
 
@@ -32,20 +41,28 @@ watchr = require('watchr')
 
 // Watch a directory or file
 watchr.watch({
-	path: path,
-	listener: function(eventName,filePath,fileCurrentStat,filePreviousStat){
-		console.log('a watch event occured:',arguments);
+	paths: ['path1','path2','path3'],
+	listeners: {
+		log: function(logLevel){
+			console.log('a log message occured:', arguments);
+		},
+		error: function(err){
+			console.log('an error occured:', err);
+		},
+		watching: function(err,watcherInstance,isWatching){
+			console.log('a new watcher instance finished setting up', arguments);
+		},
+		change: function(changeType,filePath,fileCurrentStat,filePreviousStat){
+			console.log('a change event occured:',arguments);
+		}
 	},
-	next: function(err,watcher){
-		if (err)  throw err;
-		console.log('watching setup successfully');
+	next: function(err,watchers){
+		console.log('watching for all our paths has completed', arguments);
 	}
 });
 ```
 
 You can test the above code snippet by installing watchr globally by running `npm install -g watchr` to install watchr, then `watchr <pathToWatch>` to watchr a particular path, and performing some file system modifications on that path.
-
-Thanks for using Watchr!
 
 
 ## Support

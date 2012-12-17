@@ -68,7 +68,6 @@ joe.suite 'watchr', (suite,test) ->
 			done(err)
 
 	test 'start watching', (done) ->
-		debugger
 		watchr.watch path:outPath, listener:changeHappened, next:(err,watcher) ->
 			wait batchDelay, -> done(err)
 

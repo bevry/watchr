@@ -9,10 +9,16 @@ watchPath =
 		cwd
 changes = 0
 watchr.watch(
-	path: watchPath,
-	listener: (args...) ->
-		console.log 'a watch event occured:', ++changes, ':', args
-	next: (err,watcher) ->
-		throw err  if err
-		console.log 'now watching:', watchPath
+	path: watchPath
+	listeners:
+		log: (args...) ->
+			console.log('a log message occured:', args);
+		error: (err) ->
+			console.log('an error occured:', err);
+		watching: (args...) ->
+			console.log('a new watcher instance finished setting up', args);
+		change: (args...) ->
+			console.log('a change event occured:',args);
+	next: (args...) ->
+		console.log('watching for all our paths has completed', args);
 )

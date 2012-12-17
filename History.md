@@ -1,5 +1,21 @@
 ## History
 
+- v2.3.0 December 17, 2012
+	- This is a backwards compatiblity break, however updating is easy, read the notes below.
+	- We've updated the events we emit to be:
+		- `log` for debugging, receives the arguments `logLevel ,args...`
+		- `watching` for when watching of the path has completed, receives the arguments `err, isWatching`
+		- `change` for listening to change events, receives the arguments `changeType, fullPath, currentStat, previousStat`
+		- `error` for gracefully listening to error events, receives the arguments `err`
+		- read the README to learn how to bind to these new events
+	- The `changeType` argument for change listeners has been changed for better clarity and consitency:
+		- `change` is now `update`
+		- `new` is now `create`
+		- `unlink` is now `delete`
+	- We've updated the return arguments for `require('watchr).watch` for better consitency:
+		- if you send the `paths` option, you will receive the arguments `err, results` where `results` is an array of watcher instances
+		- if you send the `path` option, you receive the arguments `err, watcherInstance`
+
 - v2.2.1 December 16, 2012
 	- Fixed sub directory scans ignoring our ignore patterns
 	- Updated dependencies

@@ -1,12 +1,3 @@
-###
-Watchr is used to be nofitied when a change happens to, or within a directory.
-You will not be notified what file was changed, or how it was changed.
-It will track new files and their changes too, and remove listeners for deleted files appropriatly.
-
-The source code here is written as an experiment of literate programming
-Which means you would be able to understand it, without knowing code
-###
-
 # Require the node.js path module
 # This provides us with what we need to interact with file paths
 pathUtil = require('path')
@@ -23,15 +14,17 @@ balUtil = require('bal-util')
 # This provides us with the event system that we use for binding and trigger events
 EventEmitter = require('events').EventEmitter
 
-# Now to make watching files more convient and managed, we'll create a class which we can use to attach to each file
-# It'll provide us with the API and abstraction we need to accomplish difficult things like recursion
-# We'll also store a global store of all the watchers and their paths so we don't have multiple watchers going at the same time
-# for the same file - as that would be quite ineffecient
-# Events:
-# - error
-# - watching
-# - change
-# - log
+###
+Now to make watching files more convient and managed, we'll create a class which we can use to attach to each file.
+It'll provide us with the API and abstraction we need to accomplish difficult things like recursion.
+We'll also store a global store of all the watchers and their paths so we don't have multiple watchers going at the same time
+for the same file - as that would be quite ineffecient.
+Events:
+- `log` for debugging, receives the arguments `logLevel ,args...`
+- `error` for gracefully listening to error events, receives the arguments `err`
+- `watching` for when watching of the path has completed, receives the arguments `err, watcherInstance, isWatching`
+- `change` for listening to change events, receives the arguments `changeType, fullPath, currentStat, previousStat`
+###
 watchers = {}
 Watcher = class extends EventEmitter
 	# The path this class instance is attached to
@@ -66,13 +59,12 @@ Watcher = class extends EventEmitter
 	# We give it a path, and give it some events to use
 	# Then we get to work with watching it
 	constructor: (config,next) ->
-		# Initialize
+		# Initialize our object variables for our instance
 		@children = {}
 		@config = {}
 
-		# If next exists within the configuration use that as our next handler
-		# But only if our next handler isn't already defined
-		# Eitherway delete the next handler from the config
+		# If next exists within the configuration, then use that as our next handler, if our next handler isn't already defined
+		# Eitherway delete the next handler from the config if it exists
 		if config.next?
 			next ?= config.next
 			delete config.next
@@ -81,27 +73,29 @@ Watcher = class extends EventEmitter
 		@setup(config)  if config
 
 		# Start the watch setup
-		@watch(next)  if next
+		@watch(next)    if next
 
 		# Chain
 		@
 
 	# Log
 	log: (args...) ->
-		#console.log(args)
-		@emit('logs',args...)
+		@emit('log',args...)
 		@
 
-	# Setup our Instance
-	# config =
-	# - `path` a single path to watch
-	# - `listeners` (optional, defaults to null) {eventName:[listener1,listener2]} OR [changeListener1,changeListener2]
-	# - `stat` (optional, defaults to `null`) a file stat object to use for the path, instead of fetching a new one
-	# - `ignoreHiddenFiles` (optional, defaults to `false`) whether or not to ignored files which filename starts with a `.`
-	# - `ignoreCommonPatterns` (optional, defaults to `true`) whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
-	# - `ignoreCustomPatterns` (optional, defaults to `null`) any custom ignore patterns that you would also like to ignore along with the common patterns
-	# - `interval` (optional, defaults to `100`) for systems that poll to detect file changes, how often should it poll in millseconds
-	# - `persistent` (optional, defaults to `true`) whether or not we should keep the node process alive for as long as files are still being watched
+	###
+	Setup our Instance
+	config =
+	- `path` a single path to watch
+	- `listener` (optional, detaults to null) single change listener, forwared to @listen
+	- `listeners` (optional, defaults to null) multiple event listeners, forwarded to @listen
+	- `stat` (optional, defaults to `null`) a file stat object to use for the path, instead of fetching a new one
+	- `ignoreHiddenFiles` (optional, defaults to `false`) whether or not to ignored files which filename starts with a `.`
+	- `ignoreCommonPatterns` (optional, defaults to `true`) whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
+	- `ignoreCustomPatterns` (optional, defaults to `null`) any custom ignore patterns that you would also like to ignore along with the common patterns
+	- `interval` (optional, defaults to `100`) for systems that poll to detect file changes, how often should it poll in millseconds
+	- `persistent` (optional, defaults to `true`) whether or not we should keep the node process alive for as long as files are still being watched
+	###
 	setup: (config) ->
 		# Path
 		@path = config.path
@@ -135,8 +129,9 @@ Watcher = class extends EventEmitter
 
 	# Before we start watching, we'll have to setup the functions our watcher will need
 
+	# Bubble
 	# We need something to bubble events up from a child file all the way up the top
-	bubble: (args...) ->
+	bubble: (args...) =>
 		# Log
 		@log('debug',"bubble on #{@path} with the args:",args)
 
@@ -146,7 +141,20 @@ Watcher = class extends EventEmitter
 		# Chain
 		@
 
-	# Listen to the change event for us
+	# Bubbler
+	# Setup a bubble wrapper
+	bubbler: (eventName) =>
+		return (args...) => @bubble(args...)
+
+	###
+	Listen
+	Add listeners to our watcher instance.
+	Overloaded to also accept the following:
+	- `changeListener` a single change listener
+	- `[changeListener]` an array of change listeners
+	- `{eventName:eventListener}` an object keyed with the event names and valued with a single event listener
+	- `{eventName:[eventListener]}` an object keyed with the event names and valued with an array of event listeners
+	###
 	listen: (eventName,listener) ->
 		# Check format
 		unless listener?
@@ -181,25 +189,32 @@ Watcher = class extends EventEmitter
 		# Chain
 		@
 
-	# A change event has fired
-	# Things to note:
-	#	watchFile:
-	#		currentStat still exists even for deleted/renamed files
-	#		for deleted and changed files, it will fire on the file
-	#		for new files, it will fire on the directory
-	#	fsWatcher:
-	#		eventName is always 'change', 'rename' is not yet implemented by node
-	#		currentStat still exists even for deleted/renamed files
-	#		previousStat is accurate, however we already have htis
-	#		for deleted and changed files, it will fire on the file
-	#		for new files, it will fire on the directory
-	# How this should work:
-	#	for changed files: 'update', fullPath, currentStat, previousStat
-	#	for new files:     'create', fullPath, currentStat, null
-	#	for deleted files: 'delete', fullPath, null,        previousStat
-	# In the future we will add:
-	#	for renamed files: 'rename', fullPath, currentStat, previousStat, newFullPath
-	#	rename is possible as the stat.ino is the same for the delete and create
+	###
+	Listener
+	A change event has fired
+
+	Things to note:
+	- watchFile:
+		- currentStat still exists even for deleted/renamed files
+		- for deleted and updated files, it will fire on the file
+		- for created files, it will fire on the directory
+	- fsWatcher:
+		- eventName is always 'change'
+		- 'rename' is not yet implemented by node
+		- currentStat still exists even for deleted/renamed files
+		- previousStat is accurate, however we already have this
+		- for deleted and changed files, it will fire on the file
+		- for new files, it will fire on the directory
+
+	Arguments for our change listener will be:
+	- for updated files the arguments will be: `'update', fullPath, currentStat, previousStat`
+	- for created files the arguments will be: `'create', fullPath, currentStat, null`
+	- for deleted files the arguments will be: `'delete', fullPath, null, previousStat`
+
+	In the future we will add:
+	- for renamed files: 'rename', fullPath, currentStat, previousStat, newFullPath
+	- rename is possible as the stat.ino is the same for the delete and create
+	###
 	listener: (args...) ->
 		# Prepare
 		me = @
@@ -295,9 +310,12 @@ Watcher = class extends EventEmitter
 		# Chain
 		@
 
-	# We will need something to close our listener for removed or renamed files
-	# As renamed files are a bit difficult we will want to close and delete all the watchers for all our children too
-	# Essentially it is like a self-destruct without the body parts
+	###
+	Close
+	We will need something to close our listener for removed or renamed files
+	As renamed files are a bit difficult we will want to close and delete all the watchers for all our children too
+	Essentially it is a self-destruct
+	###
 	close: (reason) ->
 		return @  if @state isnt 'active'
 		@log('debug',"close: #{@path}", (new Error()).stack)
@@ -339,14 +357,18 @@ Watcher = class extends EventEmitter
 		# Chain
 		@
 
-	# Setup watching a child
+	###
+	Watch Child
+	Setup watching for a child
+	Bubble events of the child into our instance
+	Also instantiate the child with our instance's configuration where applicable
+	###
 	watchChild: (fileFullPath,fileRelativePath,fileStat,next) ->
 		# Prepare
 		me = @
 		config = @config
 
 		# Watch the file
-		debugger
 		watcher = watch(
 			path: fileFullPath
 			stat: fileStat
@@ -359,8 +381,7 @@ Watcher = class extends EventEmitter
 					if changeType is 'delete' and path is fileFullPath
 						@closeChild(fileRelativePath,'deleted')
 					me.bubble('change', args...)
-				'error': (args...) ->
-					me.bubble('error', args...)
+				'error': me.bubbler('error')
 			next: (args...) ->
 				# Prepare
 				[err] = args
@@ -378,12 +399,15 @@ Watcher = class extends EventEmitter
 		# Return
 		return watcher
 
-	# Setup the watching for our path
-	# If we are already watching this path then let's start again (call close)
-	# Then if we are a directory, let's recurse
-	# Finally, let's initialise our node.js watcher that'll let us know when things happen
-	# and update our state to active
-	# next(err,watching)
+	###
+	Watch
+	Setup the native watching handlers for our path so we can receive updates on when things happen
+	If the next argument has been received, then add it is a once listener for the watching event
+	If we are already watching this path then let's start again (call close)
+	If we are a directory, let's recurse
+	If we are deleted, then don't error but return the isWatching argument of our completion callback as false
+	Once watching has completed for this directory and all children, then emit the watching event
+	###
 	watch: (next) ->
 		# Prepare
 		me = @
@@ -419,8 +443,8 @@ Watcher = class extends EventEmitter
 		startWatching = =>
 			# Create a set of tasks
 			tasks = new balUtil.Group (err) =>
-				return @emit('watching',err,false)  if err
-				return @emit('watching',err,true)
+				return @emit('watching',err,@,false)  if err
+				return @emit('watching',err,@,true)
 			tasks.total = 2
 
 			# Cycle through the directory if necessary
@@ -472,7 +496,7 @@ Watcher = class extends EventEmitter
 			# Check
 			unless exists
 				# We don't exist anymore, move along
-				return @emit('watching',null,false)
+				return @emit('watching',null,@,false)
 
 			# Start watching
 			startWatching()
@@ -481,16 +505,28 @@ Watcher = class extends EventEmitter
 		@
 
 
-# Create a new watchr instance or use one from cache
+###
+Create Watcher
+Checks to see if the path actually exists, if it doesn't then exit gracefully
+If it does exist, then lets check our cache for an already existing watcher instance
+If we have an already existing watching instance, then just add our listeners to that
+If we don't, then create a watching instance
+Fire the next callback once done
+next(err,watcherInstance)
+###
 createWatcher = (opts,next) ->
 	# Prepare
-	[opts,next] = balUtil.extractOptsAndCallback(opts,next)
 	{path,listener,listeners} = opts
-	watchr = null
+
+	# If next exists within the configuration, then use that as our next handler, if our next handler isn't already defined
+	# Eitherway delete the next handler from the config if it exists
+	if opts.next?
+		next ?= opts.next
+		delete opts.next
 
 	# Only create a watchr if the path exists
 	unless balUtil.existsSync(path)
-		next?(null,watcher)
+		next?(null,null)
 		return
 
 	# Check if we are already watching that path
@@ -505,38 +541,57 @@ createWatcher = (opts,next) ->
 	else
 		# We don't, so let's create a new one
 		watcher = new Watcher opts, (err) ->
-			next?(err,watchr)
+			next?(err,watcher)
 		watchers[path] = watcher
 
 	# Return
 	return watcher
 
 
-# Provide our watch API interface, which supports one path or multiple paths
-# If you are passing in multiple paths
-# do not rely on the return result containing all of the watchers
-# you must rely on the result inside the completion callback instead
+###
+Watch
+Provides an abstracted API that supports multiple paths
+If you are passing in multiple paths then do not rely on the return result containing all of the watchers
+you must rely on the result inside the completion callback instead
+If you used the paths option, then your results will be an array of watcher instances, otherwise they will be a single watcher instance
+next(err,results)
+###
 watch = (opts,next) ->
 	# Prepare
-	[opts,next] = balUtil.extractOptsAndCallback(opts,next)
-	{paths} = opts
-	result = null
-	delete opts.paths
-	delete opts.next
+	result = []
 
-	# We have multiple paths
-	if paths instanceof Array
-		# Prepare
-		result = []
-		tasks = new balUtil.Group (err) ->
-			next?(err,result)
-		for path in paths
-			tasks.push {path}, (complete) ->
-				localOpts = balUtil.extend({},opts)
-				localOpts.path = @path
-				watchr = createWatcher(localOpts,complete)
-				result.push(watchr)  if watchr
-		tasks.async()  # by async here we actually mean parallel, as our tasks are actually synchronous
+	# If next exists within the configuration, then use that as our next handler, if our next handler isn't already defined
+	# Eitherway delete the next handler from the config if it exists
+	if opts.next?
+		next ?= opts.next
+		delete opts.next
+
+	# Check paths as that is handled by us
+	if opts.paths
+		# Extract it and delte it from the opts
+		paths = opts.paths
+		delete opts.paths
+
+		# Check its format
+		if balUtil.isArray(paths)
+			# Prepare
+			tasks = new balUtil.Group (err) ->
+				next?(err,result)
+			for path in paths
+				tasks.push {path}, (complete) ->
+					localOpts = balUtil.extend({},opts)
+					localOpts.path = @path
+					watcher = createWatcher(localOpts,complete)
+					result.push(watcher)  if watcher
+			tasks.async()
+
+		# Paths is actually a single path
+		else
+			opts.path = paths
+			result.push createWatcher opts, (err) ->
+				next?(err,result)
+
+	# Single path
 	else
 		result = createWatcher(opts,next)
 

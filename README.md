@@ -7,7 +7,7 @@ You install it via `npm install watchr` and use it via `require('watchr').watch(
 - `path` a single path to watch
 - `paths` an array of paths to watch
 - `listener` a single change listener to fire when a change occurs
-- `listeners` an array of listeners to fire when a change occurs, overloaded to also accept
+- `listeners` an array of listeners to fire when a change occurs, overloaded to accept the following values:
 	- `changeListener` a single change listener
 	- `[changeListener]` an array of change listeners
 	- `{eventName:eventListener}` an object keyed with the event names and valued with a single event listener

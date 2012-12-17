@@ -12,7 +12,7 @@
 		- `change` is now `update`
 		- `new` is now `create`
 		- `unlink` is now `delete`
-	- We've updated the return arguments for `require('watchr).watch` for better consitency:
+	- We've updated the return arguments for `require('watchr').watch` for better consitency:
 		- if you send the `paths` option, you will receive the arguments `err, results` where `results` is an array of watcher instances
 		- if you send the `path` option, you receive the arguments `err, watcherInstance`
 

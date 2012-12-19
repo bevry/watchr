@@ -1,5 +1,9 @@
 ## History
 
+- v2.3.1 December 19, 2012
+	- Fixed a bug with closing directories that have children
+		- Thanks to [Casey Foster](https://github.com/caseywebdev) for [issue #23](https://github.com/bevry/watchr/issues/23)
+
 - v2.3.0 December 17, 2012
 	- This is a backwards compatiblity break, however updating is easy, read the notes below.
 	- We've updated the events we emit to be:

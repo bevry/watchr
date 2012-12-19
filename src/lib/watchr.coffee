@@ -322,7 +322,7 @@ Watcher = class extends EventEmitter
 
 		# Close our children
 		for own childRelativePath of @children
-			@closeChild(childRelativePath,type)
+			@closeChild(childRelativePath,reason)
 
 		# Close listener
 		if @method is 'watchFile'

@@ -275,7 +275,7 @@ Watcher = class extends EventEmitter
 										# still exists
 									else
 										# deleted file
-										childFileFullPath = childFileWatcher.path
+										#childFileFullPath = childFileWatcher.path
 										@log('debug','determined delete:',childFileRelativePath)
 										@closeChild(childFileRelativePath,'deleted')
 

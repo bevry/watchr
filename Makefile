@@ -5,8 +5,10 @@
 # -----------------
 # Variables
 
-BIN=node_modules/.bin/
-COFFEE=$(BIN)coffee
+BIN=node_modules/.bin
+COFFEE=$(BIN)/coffee
+OUT=out
+SRC=src
 
 
 # -----------------
@@ -24,17 +26,17 @@ COFFEE=$(BIN)coffee
 
 # Watch and recompile our files
 dev:
-	$(COFFEE) -cbwo out src
+	$(COFFEE) -cbwo $(OUT) $(SRC)
 
 # Compile our files
 compile:
-	$(COFFEE) -cbo out src
+	$(COFFEE) -cbo $(OUT) $(SRC)
 
 # Clean up
 clean:
-	rm -Rf out node_modules npm-debug.log
+	rm -Rf $(OUT) node_modules *.log
 
-# Install
+# Install dependencies
 install:
 	npm install
 
@@ -42,16 +44,23 @@ install:
 reset:
 	make clean
 	make install
+	make compile
 
 # Ensure everything is ready for our tests (used by things like travis)
 test-prepare:
-	make install
-	make compile
+	make reset
 
 # Run our tests
 test:
 	npm test
 
+# Example
+example-run:
+	make compile
+	./bin/watchr
+example:
+	make example-run -i
+
 
 # Ensure the listed commands always re-run and are never cached
-.PHONY: dev compile clean install reset test-prepare test
+.PHONY: dev compile clean install reset test-prepare test example example-run

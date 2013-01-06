@@ -1,5 +1,10 @@
 ## History
 
+- v2.3.2 January 6, 2013
+	- Fixed closing when a child path watcher doesn't exist
+		- Closes [pull request #26](https://github.com/bevry/watchr/pull/26) thanks to [Jason Als](https://github.com/jasonals)
+	- Added close tests
+
 - v2.3.1 December 19, 2012
 	- Fixed a bug with closing directories that have children
 		- Thanks to [Casey Foster](https://github.com/caseywebdev) for [issue #23](https://github.com/bevry/watchr/issues/23)

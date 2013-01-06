@@ -32,6 +32,9 @@ writetree =
 # Watchr
 
 joe.suite 'watchr', (suite,test) ->
+	# Prepare
+	watcher = null
+
 	# Change detection
 	actualChanges = 0
 	checkChanges = (expectedChanges,next) ->
@@ -68,7 +71,8 @@ joe.suite 'watchr', (suite,test) ->
 			done(err)
 
 	test 'start watching', (done) ->
-		watchr.watch path:outPath, listener:changeHappened, next:(err,watcher) ->
+		watchr.watch path:outPath, listener:changeHappened, next:(err,_watcher) ->
+			watcher = _watcher
 			wait batchDelay, -> done(err)
 
 	test 'detect write', (done) ->
@@ -104,6 +108,9 @@ joe.suite 'watchr', (suite,test) ->
 	test 'detect subdir file delete', (done) ->
 		deleteFile('someNewDir1/someNewfile2')
 		checkChanges(1,done)
+
+	test 'stop watching', ->
+		watcher.close()
 
 	test 'completed', (done) ->
 		done()

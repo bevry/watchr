@@ -275,8 +275,8 @@ Watcher = class extends EventEmitter
 										# still exists
 									else
 										# deleted file
-										childFileFullPath = childFileWatcher.path
-										@log('debug','determined delete:',childFileRelativePath)
+										childFileFullPath = pathUtil.join(fileFullPath,childFileRelativePath)
+										@log('debug','determined delete:',childFileFullPath)
 										@closeChild(childFileRelativePath,'deleted')
 
 
@@ -318,7 +318,7 @@ Watcher = class extends EventEmitter
 	###
 	close: (reason) ->
 		return @  if @state isnt 'active'
-		@log('debug',"close: #{@path}", (new Error()).stack)
+		@log('debug',"close: #{@path}")
 
 		# Close our children
 		for own childRelativePath of @children

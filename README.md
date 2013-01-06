@@ -33,13 +33,15 @@ The following events are available to your via the listeners:
 	- for created files: `'create', fullPath, currentStat, null`
 	- for deleted files: `'delete', fullPath, null, previousStat`
 
+
 To wrap it all together, it would look like this:
 
 ``` javascript
 // Require
-watchr = require('watchr')
+var watchr = require('watchr')
 
 // Watch a directory or file
+console.log('Watch our paths');
 watchr.watch({
 	paths: ['path1','path2','path3'],
 	listeners: {
@@ -57,7 +59,17 @@ watchr.watch({
 		}
 	},
 	next: function(err,watchers){
-		console.log('watching for all our paths has completed', arguments);
+		// Watching all setup
+		console.log('Now watching  our paths', arguments);
+
+		// Close watchers after 10 seconds
+		setTimeout(function(){
+			var i;
+			console.log('Stop watching our paths');
+			for ( i=0;  i<watchers.length; i++ ) {
+				watchers[i].close();
+			}
+		},10*1000);
 	}
 });
 ```

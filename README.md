@@ -16,6 +16,7 @@ You install it via `npm install watchr` and use it via `require('watchr').watch(
 	- when using the `path` configuration option: `err, watcherInstance`
 	- when using the `paths` configuration option: `err, [watcherInstance,...]` 
 - `stat` (optional, defaults to `null`) a file stat object to use for the path, instead of fetching a new one
+- `ignorePaths` (optional, defaults to `false`) an array of full paths to ignore
 - `ignoreHiddenFiles` (optional, defaults to `false`) whether or not to ignored files which filename starts with a `.`
 - `ignoreCommonPatterns` (optional, defaults to `true`) whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
 - `ignoreCustomPatterns` (optional, defaults to `null`) any custom ignore patterns that you would also like to ignore along with the common patterns
@@ -90,5 +91,5 @@ You can discover the history inside the [History.md](https://github.com/bevry/wa
 ## License
 
 Licensed under the incredibly [permissive](http://en.wikipedia.org/wiki/Permissive_free_software_licence) [MIT License](http://creativecommons.org/licenses/MIT/)
-<br/>Copyright &copy; 2012 [Bevry Pty Ltd](http://bevry.me)
+<br/>Copyright &copy; 2012+ [Bevry Pty Ltd](http://bevry.me)
 <br/>Copyright &copy; 2011 [Benjamin Lupton](http://balupton.com)

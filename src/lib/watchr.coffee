@@ -53,7 +53,48 @@ Watcher = class extends EventEmitter
 	method: null
 
 	# Configuration
-	config: null
+	config:
+		# A single path to watch
+		path: null
+
+		# Should we output log messages?
+		outputLog: false
+
+		# Listener (optional, detaults to null)
+		# single change listener, forwaded to @listen
+		listener: null
+
+		# Listeners (optional, defaults to null)
+		# multiple event listeners, forwarded to @listen
+		listeners: null
+
+		# Stat (optional, defaults to `null`)
+		# a file stat object to use for the path, instead of fetching a new one
+		stat: null
+
+		# Ignore Paths (optional, defaults to `false`)
+		# array of paths that we should ignore
+		ignorePaths: false
+
+		# Ignore Hidden Files (optional, defaults to `false`)
+		# whether or not to ignored files which filename starts with a `.`
+		ignoreHiddenFiles: false
+
+		# Ignore Common Patterns (optional, defaults to `true`)
+		# whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
+		ignoreCommonPatterns: true
+
+		# Ignore Custom PAtterns (optional, defaults to `null`)
+		# any custom ignore patterns that you would also like to ignore along with the common patterns
+		ignoreCustomPatterns: null
+
+		# Interval (optional, defaults to `100`)
+		# for systems that poll to detect file changes, how often should it poll in millseconds
+		interval: 100
+
+		# Persistent (optional, defaults to `true`)
+		# whether or not we should keep the node process alive for as long as files are still being watched
+		persistent: true
 
 	# Now it's time to construct our watcher
 	# We give it a path, and give it some events to use
@@ -61,7 +102,7 @@ Watcher = class extends EventEmitter
 	constructor: (config,next) ->
 		# Initialize our object variables for our instance
 		@children = {}
-		@config = {}
+		@config = balUtil.extend({},@config)
 
 		# If next exists within the configuration, then use that as our next handler, if our next handler isn't already defined
 		# Eitherway delete the next handler from the config if it exists
@@ -79,34 +120,20 @@ Watcher = class extends EventEmitter
 		@
 
 	# Log
-	log: (args...) ->
+	log: (args...) =>
+		console.log(args...)  if @config.outputLog
 		@emit('log',args...)
 		@
 
 	###
 	Setup our Instance
-	config =
-	- `path` a single path to watch
-	- `listener` (optional, detaults to null) single change listener, forwared to @listen
-	- `listeners` (optional, defaults to null) multiple event listeners, forwarded to @listen
-	- `stat` (optional, defaults to `null`) a file stat object to use for the path, instead of fetching a new one
-	- `ignoreHiddenFiles` (optional, defaults to `false`) whether or not to ignored files which filename starts with a `.`
-	- `ignoreCommonPatterns` (optional, defaults to `true`) whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
-	- `ignoreCustomPatterns` (optional, defaults to `null`) any custom ignore patterns that you would also like to ignore along with the common patterns
-	- `interval` (optional, defaults to `100`) for systems that poll to detect file changes, how often should it poll in millseconds
-	- `persistent` (optional, defaults to `true`) whether or not we should keep the node process alive for as long as files are still being watched
 	###
 	setup: (config) ->
 		# Path
 		@path = config.path
 
-		# Options
-		@config = config
-		@config.ignoreHiddenFiles ?= false
-		@config.ignoreCommonPatterns ?= true
-		@config.ignoreCustomPatterns ?= null
-		@config.interval ?= 100
-		@config.persistent ?= true
+		# Apply
+		balUtil.extend(@config,config)
 
 		# Stat
 		if @config.stat
@@ -256,28 +283,46 @@ Watcher = class extends EventEmitter
 						if isTheSame() is false
 							# Scan children
 							balUtil.readdir fileFullPath, (err,newFileRelativePaths) =>
+								# Error
 								return @emit('error',err)  if err
+
 								# Check for new files
-								balUtil.each newFileRelativePaths, (newFileRelativePath) =>
-									if @children[newFileRelativePath]?
-										# already exists
-									else
-										# new file
-										newFileFullPath = pathUtil.join(fileFullPath,newFileRelativePath)
-										balUtil.stat newFileFullPath, (err,newFileStat) =>
-											return @emit('error',err)  if err
-											@log('debug','determined create:',newFileFullPath)
-											@emit('change','create',newFileFullPath,newFileStat,null)
-											@watchChild(newFileFullPath,newFileRelativePath,newFileStat)
+								balUtil.each newFileRelativePaths, (childFileRelativePath) =>
+									# Already watching the new file
+									return  if @children[childFileRelativePath]?
+									# Not yet watching the new file
+
+									# Fetch full path
+									childFileFullPath = pathUtil.join(fileFullPath,childFileRelativePath)
+
+									# Is ignored file?
+									return  if @isIgnoredPath(childFileFullPath)
+
+									# Fetch the stat for the new file
+									balUtil.stat childFileFullPath, (err,childFileStat) =>
+										# Error
+										return @emit('error',err)  if err
+
+										# Emit the event
+										@log('debug','determined create:',childFileFullPath,'via:',fileFullPath)
+										@emit('change','create',childFileFullPath,childFileStat,null)
+										@watchChild(childFileFullPath,childFileRelativePath,childFileStat)
+
 								# Check for deleted files
 								balUtil.each @children, (childFileWatcher,childFileRelativePath) =>
-									if childFileRelativePath in newFileRelativePaths
-										# still exists
-									else
-										# deleted file
-										childFileFullPath = pathUtil.join(fileFullPath,childFileRelativePath)
-										@log('debug','determined delete:',childFileFullPath)
-										@closeChild(childFileRelativePath,'deleted')
+									# File still exists
+									return  if childFileRelativePath in newFileRelativePaths
+									# File was deleted
+
+									# Fetch full path
+									childFileFullPath = pathUtil.join(fileFullPath,childFileRelativePath)
+
+									# Is ignored file?
+									return  if @isIgnoredPath(childFileFullPath)
+
+									# Emit the event
+									@log('debug','determined delete:',childFileFullPath,'via:',fileFullPath)
+									@closeChild(childFileRelativePath,'deleted')
 
 
 					# If we are a file, lets simply emit the change event
@@ -372,6 +417,7 @@ Watcher = class extends EventEmitter
 		watcher = watch(
 			path: fileFullPath
 			stat: fileStat
+			ignorePaths: config.ignorePaths
 			ignoreHiddenFiles: config.ignoreHiddenFiles
 			ignoreCommonPatterns: config.ignoreCommonPatterns
 			ignoreCustomPatterns: config.ignoreCustomPatterns
@@ -398,6 +444,22 @@ Watcher = class extends EventEmitter
 
 		# Return
 		return watcher
+
+	# Is Ignored Path
+	isIgnoredPath: (path,opts={}) =>
+		# Ignore?
+		ignore = balUtil.isIgnoredPath(path,{
+			ignorePaths: opts.ignorePaths ? @config.ignorePaths
+			ignoreHiddenFiles: opts.ignoreHiddenFiles ? @config.ignoreHiddenFiles
+			ignoreCommonPatterns: opts.ignoreCommonPatterns ? @config.ignoreCommonPatterns
+			ignoreCustomPatterns: opts.ignoreCustomPatterns ? @config.ignoreCustomPatterns
+		})
+
+		# Log
+		@log('debug',"ignore: #{path} #{if ignore then 'yes' else 'no'}")
+
+		# Return
+		return ignore
 
 	###
 	Watch
@@ -454,6 +516,7 @@ Watcher = class extends EventEmitter
 					path: @path
 
 					# Options
+					ignorePaths: config.ignorePaths
 					ignoreHiddenFiles: config.ignoreHiddenFiles
 					ignoreCommonPatterns: config.ignoreCommonPatterns
 					ignoreCustomPatterns: config.ignoreCustomPatterns

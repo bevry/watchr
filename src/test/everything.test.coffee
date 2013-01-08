@@ -23,6 +23,7 @@ writetree =
 		'b-b': 'b-b content'
 	'.c':
 		'c-a': 'c-a content'
+	'blah': 'blah content'
 
 
 # =====================================
@@ -71,19 +72,41 @@ joe.suite 'watchr', (suite,test) ->
 			done(err)
 
 	test 'start watching', (done) ->
-		watchr.watch path:outPath, listener:changeHappened, next:(err,_watcher) ->
-			watcher = _watcher
-			wait batchDelay, -> done(err)
+		watchr.watch(
+			path: outPath
+			listener: changeHappened
+			ignorePaths: [outPath+'/blah']
+			ignoreHiddenFiles: true
+			#outputLog: true
+			next: (err,_watcher) ->
+				watcher = _watcher
+				wait batchDelay, -> done(err)
+		)
 
 	test 'detect write', (done) ->
 		writeFile('a')
 		writeFile('b/b-a')
+		checkChanges(2,done)
+
+	test 'detect write ignored on hidden files', (done) ->
 		writeFile('.c/c-a')
-		checkChanges(3,done)
+		checkChanges(0,done)
+
+	test 'detect write ignored on ignored files', (done) ->
+		writeFile('blah')
+		checkChanges(0,done)
 
 	test 'detect delete', (done) ->
 		deleteFile('b/b-b')
 		checkChanges(1,done)
+
+	test 'detect delete ignored on hidden files', (done) ->
+		deleteFile('.c/c-a')
+		checkChanges(0,done)
+
+	test 'detect delete ignored on ignored files', (done) ->
+		deleteFile('blah')
+		checkChanges(0,done)
 
 	test 'detect mkdir', (done) ->
 		makeDir('someNewDir1')

@@ -1,5 +1,14 @@
 ## History
 
+- v2.3.3 January 8, 2013
+	- Added `outputLog` option
+	- Added `ignorePaths` option
+		- Thanks to [Tane Piper](https://github.com/tanepiper) for [issue #24](https://github.com/bevry/watchr/issues/24)
+	- Now properly ignores hidden files
+		- Thanks to [Ting-yu (Joseph) Chiang](https://github.com/josephj) for [issue #25](https://github.com/bevry/watchr/issues/25) and [Julien M.](https://github.com/julienma) for [issue #28](https://github.com/bevry/watchr/issues/28)
+	- Added `Watcher::isIgnoredPath` method
+	- Added tests for ignored and hidden files
+
 - v2.3.2 January 6, 2013
 	- Fixed closing when a child path watcher doesn't exist
 		- Closes [pull request #26](https://github.com/bevry/watchr/pull/26) thanks to [Jason Als](https://github.com/jasonals)

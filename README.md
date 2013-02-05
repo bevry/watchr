@@ -16,13 +16,14 @@ You install it via `npm install watchr` and use it via `require('watchr').watch(
 	- when using the `path` configuration option: `err, watcherInstance`
 	- when using the `paths` configuration option: `err, [watcherInstance,...]` 
 - `stat` (optional, defaults to `null`) a file stat object to use for the path, instead of fetching a new one
+- `interval` (optional, defaults to `100`) for systems that poll to detect file changes, how often should it poll in millseconds
+- `persistent` (optional, defaults to `true`) whether or not we should keep the node process alive for as long as files are still being watched
+- `duplicateDelay` (optional, defaults to `1000`) sometimes events will fire really fast, this delay is set in place so we don't fire the same event within the timespan
+- `preferredMethod` (optional, defaults to `watch`) which watching method should try first? `watch` or `watchFile`
 - `ignorePaths` (optional, defaults to `false`) an array of full paths to ignore
 - `ignoreHiddenFiles` (optional, defaults to `false`) whether or not to ignored files which filename starts with a `.`
 - `ignoreCommonPatterns` (optional, defaults to `true`) whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
 - `ignoreCustomPatterns` (optional, defaults to `null`) any custom ignore patterns that you would also like to ignore along with the common patterns
-- `interval` (optional, defaults to `100`) for systems that poll to detect file changes, how often should it poll in millseconds
-- `persistent` (optional, defaults to `true`) whether or not we should keep the node process alive for as long as files are still being watched
-
 
 The following events are available to your via the listeners:
 
@@ -39,7 +40,7 @@ To wrap it all together, it would look like this:
 
 ``` javascript
 // Require
-var watchr = require('watchr')
+var watchr = require('watchr');
 
 // Watch a directory or file
 console.log('Watch our paths');
@@ -53,15 +54,22 @@ watchr.watch({
 			console.log('an error occured:', err);
 		},
 		watching: function(err,watcherInstance,isWatching){
-			console.log('a new watcher instance finished setting up', arguments);
+			if (err) {
+				console.log("watching the path " + watcherInstance.path + " failed with error", err);
+			} else {
+				console.log("watching the path " + watcherInstance.path + " completed");
+			}
 		},
 		change: function(changeType,filePath,fileCurrentStat,filePreviousStat){
 			console.log('a change event occured:',arguments);
 		}
 	},
 	next: function(err,watchers){
-		// Watching all setup
-		console.log('Now watching  our paths', arguments);
+		if (err) {
+			return console.log("watching everything failed with error", err);
+		} else {
+			console.log('watching everything completed', watchers);
+		}
 
 		// Close watchers after 10 seconds
 		setTimeout(function(){
@@ -75,7 +83,12 @@ watchr.watch({
 });
 ```
 
-You can test the above code snippet by installing watchr globally by running `npm install -g watchr` to install watchr, then `watchr <pathToWatch>` to watchr a particular path, and performing some file system modifications on that path.
+You can test the above code snippet by running the following:
+
+```
+npm install watchr
+./node_modules/.bin/watchr
+```
 
 
 ## Support

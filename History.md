@@ -1,5 +1,15 @@
 ## History
 
+- v2.3.4 January 8, 2013
+	- Better handling and detection of failed watching operations
+	- Better handling of duplicated events 
+	- Watching is now an atomic operation
+		- If watching fails for a descendant, we will close everything related to that watch operation of the eve
+	- We now prefer the `watch` method over the `watchFile` method
+		- This offers great reliability and way less CPU and memory foot print
+		- If you still wish to prefer `watchFile`, then set the new configuration option `preferredMethod` to `watchFile`
+	- Closes [issue #30](https://github.com/bevry/watchr/issues/30) thanks to [Howard Tyson](https://github.com/tizzo)
+
 - v2.3.3 January 8, 2013
 	- Added `outputLog` option
 	- Added `ignorePaths` option

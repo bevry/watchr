@@ -37,15 +37,16 @@ joe.suite 'watchr', (suite,test) ->
 	watcher = null
 
 	# Change detection
-	actualChanges = 0
+	changes = []
 	checkChanges = (expectedChanges,next) ->
 		wait batchDelay, ->
-			assert.equal(actualChanges, expectedChanges, "#{actualChanges} changes ran out of #{expectedChanges} changes")
-			actualChanges = 0
+			console.log(changes)  if changes.length isnt expectedChanges
+			assert.equal(changes.length, expectedChanges, "#{changes.length} changes ran out of #{expectedChanges} changes")
+			changes = []
 			next()
 	changeHappened = (args...) ->
-		++actualChanges
-		console.log("a watch event occured: #{actualChanges}", args)  if debug
+		changes.push(args)
+		console.log("a watch event occured: #{changes.length}", args)  if debug
 
 	# Files changes
 	writeFile = (fileRelativePath) ->
@@ -75,9 +76,9 @@ joe.suite 'watchr', (suite,test) ->
 		watchr.watch(
 			path: outPath
 			listener: changeHappened
-			ignorePaths: [outPath+'/blah']
+			ignorePaths: [pathUtil.join(outPath,'blah')]
 			ignoreHiddenFiles: true
-			#outputLog: true
+			outputLog: true
 			next: (err,_watcher) ->
 				watcher = _watcher
 				wait batchDelay, -> done(err)

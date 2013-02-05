@@ -1,6 +1,6 @@
 {
 	"name": "watchr",
-	"version": "2.3.3",
+	"version": "2.3.4",
 	"description": "Better file system watching for Node.js",
 	"homepage": "https://github.com/bevry/watchr",
 	"keywords": [
@@ -30,7 +30,7 @@
 		"node": ">=0.4"
 	},
 	"dependencies": {
-		"bal-util": "~1.15.4"
+		"bal-util": "~1.16.3"
 	},
 	"devDependencies": {
 		"coffee-script": "~1.4.0",

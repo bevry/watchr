@@ -14,6 +14,27 @@ balUtil = require('bal-util')
 # This provides us with the event system that we use for binding and trigger events
 EventEmitter = require('events').EventEmitter
 
+# Require the optional domain logic introduced in node 0.8
+try
+	domain = require('domain')
+catch err
+	domain = false
+
+# Safe Execute
+# Wrap the method in a domain if we can, otherwise wrap it in a try catch
+# If an error occurs, go to the next callback
+safeExecute = (next,method) ->
+	if domain
+		d = domain.create()
+		d.on 'error', (err) ->
+			return next(err,false)
+		d.run(method)
+	else
+		try
+			method()
+		catch err
+			next(err,false)
+
 ###
 Now to make watching files more convient and managed, we'll create a class which we can use to attach to each file.
 It'll provide us with the API and abstraction we need to accomplish difficult things like recursion.
@@ -25,6 +46,7 @@ Events:
 - `watching` for when watching of the path has completed, receives the arguments `err, watcherInstance, isWatching`
 - `change` for listening to change events, receives the arguments `changeType, fullPath, currentStat, previousStat`
 ###
+watchersTotal = 0
 watchers = {}
 Watcher = class extends EventEmitter
 	# The path this class instance is attached to
@@ -57,9 +79,6 @@ Watcher = class extends EventEmitter
 		# A single path to watch
 		path: null
 
-		# Should we output log messages?
-		outputLog: false
-
 		# Listener (optional, detaults to null)
 		# single change listener, forwaded to @listen
 		listener: null
@@ -71,6 +90,29 @@ Watcher = class extends EventEmitter
 		# Stat (optional, defaults to `null`)
 		# a file stat object to use for the path, instead of fetching a new one
 		stat: null
+
+		# Should we output log messages?
+		outputLog: false
+
+		# Interval (optional, defaults to `100`)
+		# for systems that poll to detect file changes, how often should it poll in millseconds
+		# if you are watching a lot of files, make this value larger otherwise you will have huge memory load
+		# only appliable to the `watchFile` watching method
+		interval: 100
+
+		# Persistent (optional, defaults to `true`)
+		# whether or not we should keep the node process alive for as long as files are still being watched
+		# only appliable to the `watchFile` watching method
+		persistent: true
+
+		# Duplicate Delay (optional, defaults to `1000`)
+		# sometimes events will fire really fast, this delay is set in place to ensure we don't fire the same event
+		# within the duplicateDelay timespan
+		duplicateDelay: 1*1000
+
+		# Preferred Method (optional, detaults to `watch`)
+		# which node.js fsUtil watching method should we attempt first, either `watch` or `watchFile`
+		preferredMethod: 'watch'
 
 		# Ignore Paths (optional, defaults to `false`)
 		# array of paths that we should ignore
@@ -88,13 +130,6 @@ Watcher = class extends EventEmitter
 		# any custom ignore patterns that you would also like to ignore along with the common patterns
 		ignoreCustomPatterns: null
 
-		# Interval (optional, defaults to `100`)
-		# for systems that poll to detect file changes, how often should it poll in millseconds
-		interval: 100
-
-		# Persistent (optional, defaults to `true`)
-		# whether or not we should keep the node process alive for as long as files are still being watched
-		persistent: true
 
 	# Now it's time to construct our watcher
 	# We give it a path, and give it some events to use
@@ -160,7 +195,7 @@ Watcher = class extends EventEmitter
 	# We need something to bubble events up from a child file all the way up the top
 	bubble: (args...) =>
 		# Log
-		@log('debug',"bubble on #{@path} with the args:",args)
+		#@log('debug',"bubble on #{@path} with the args:",args)
 
 		# Trigger
 		@emit(args...)
@@ -217,6 +252,42 @@ Watcher = class extends EventEmitter
 		@
 
 	###
+	Emit Safe
+	Sometimes events can fire incredibly quickly in which case we'll determine multiple events
+	This alias for emit('change',...) will check to see if the event has already been fired recently
+	and if it has, then ignore it
+	###
+	cacheTimeout: null
+	cachedEvents: null
+	emitSafe: (args...) ->
+		# Prepare
+		me = @
+		config = @config
+
+		# Clear duplicate timeout
+		clearTimeout(@cacheTimeout)  if @cacheTimeout?
+		@cacheTimeout = setTimeout(
+			->
+				me.cachedEvents = []
+				me.cacheTimeout = null
+			config.duplicateDelay
+		)
+		@cachedEvents ?= []
+
+		# Check duplicate
+		thisEvent = args.toString()
+		if thisEvent in @cachedEvents
+			@log('debug',"event ignored on #{@path} due to duplicate:", args)
+			return @
+		@cachedEvents.push(thisEvent)
+
+		# Fire the event
+		@emit(args...)
+
+		# Chain
+		@
+
+	###
 	Listener
 	A change event has fired
 
@@ -226,8 +297,7 @@ Watcher = class extends EventEmitter
 		- for deleted and updated files, it will fire on the file
 		- for created files, it will fire on the directory
 	- fsWatcher:
-		- eventName is always 'change'
-		- 'rename' is not yet implemented by node
+		- eventName is either 'change' or 'rename', this value cannot be trusted
 		- currentStat still exists even for deleted/renamed files
 		- previousStat is accurate, however we already have this
 		- for deleted and changed files, it will fire on the file
@@ -283,53 +353,53 @@ Watcher = class extends EventEmitter
 						if isTheSame() is false
 							# Scan children
 							balUtil.readdir fileFullPath, (err,newFileRelativePaths) =>
-								# Error
+								# Error?
 								return @emit('error',err)  if err
 
-								# Check for new files
-								balUtil.each newFileRelativePaths, (childFileRelativePath) =>
-									# Already watching the new file
-									return  if @children[childFileRelativePath]?
-									# Not yet watching the new file
-
-									# Fetch full path
-									childFileFullPath = pathUtil.join(fileFullPath,childFileRelativePath)
-
-									# Is ignored file?
-									return  if @isIgnoredPath(childFileFullPath)
-
-									# Fetch the stat for the new file
-									balUtil.stat childFileFullPath, (err,childFileStat) =>
-										# Error
-										return @emit('error',err)  if err
-
-										# Emit the event
-										@log('debug','determined create:',childFileFullPath,'via:',fileFullPath)
-										@emit('change','create',childFileFullPath,childFileStat,null)
-										@watchChild(childFileFullPath,childFileRelativePath,childFileStat)
-
 								# Check for deleted files
+								# by cycling through our known children
 								balUtil.each @children, (childFileWatcher,childFileRelativePath) =>
-									# File still exists
+									# Skip if this is a new file (not a deleted file)
 									return  if childFileRelativePath in newFileRelativePaths
-									# File was deleted
 
 									# Fetch full path
 									childFileFullPath = pathUtil.join(fileFullPath,childFileRelativePath)
 
-									# Is ignored file?
+									# Skip if ignored file
 									return  if @isIgnoredPath(childFileFullPath)
 
 									# Emit the event
 									@log('debug','determined delete:',childFileFullPath,'via:',fileFullPath)
 									@closeChild(childFileRelativePath,'deleted')
 
+								# Check for new files
+								balUtil.each newFileRelativePaths, (childFileRelativePath) =>
+									# Skip if we are already watching this file
+									return  if @children[childFileRelativePath]?
+									@children[childFileRelativePath] = false  # reserve this file
+
+									# Fetch full path
+									childFileFullPath = pathUtil.join(fileFullPath,childFileRelativePath)
+
+									# Skip if ignored file
+									return  if @isIgnoredPath(childFileFullPath)
+
+									# Fetch the stat for the new file
+									balUtil.stat childFileFullPath, (err,childFileStat) =>
+										# Error?
+										return @emit('error',err)  if err
+
+										# Emit the event
+										@log('debug','determined create:',childFileFullPath,'via:',fileFullPath)
+										@emitSafe('change','create',childFileFullPath,childFileStat,null)
+										@watchChild(childFileFullPath,childFileRelativePath,childFileStat)
+
 
 					# If we are a file, lets simply emit the change event
 					else
 						# It has changed, so let's emit a change event
 						@log('debug','determined update:',fileFullPath)
-						@emit('change','update',fileFullPath,currentStat,previousStat)
+						@emitSafe('change','update',fileFullPath,currentStat,previousStat)
 
 		# Check if the file still exists
 		balUtil.exists fileFullPath, (exists) ->
@@ -369,35 +439,40 @@ Watcher = class extends EventEmitter
 		for own childRelativePath of @children
 			@closeChild(childRelativePath,reason)
 
-		# Close listener
+		# Close watchFile listener
 		if @method is 'watchFile'
 			fsUtil.unwatchFile(@path)
-		else if @method is 'watch'  and  @fswatcher
+
+		# Close watch listener
+		if @fswatcher?
 			@fswatcher.close()
 			@fswatcher = null
 
 		# Updated state
 		if reason is 'deleted'
 			@state = 'deleted'
-			@emit('change','delete',@path,null,@stat)
+			@emitSafe('change','delete',@path,null,@stat)
+		else if reason is 'failure'
+			@state = 'closed'
+			@log('warn',"Failed to watch the path #{@path}")
 		else
 			@state = 'closed'
 
 		# Delete our watchers reference
-		delete watchers[@path]  if watchers[@path]?
+		if watchers[@path]?
+			delete watchers[@path]
+			watchersTotal--
 
 		# Chain
 		@
 
 	# Close a child
 	closeChild: (fileRelativePath,reason) ->
-		# Prepare
-		watcher = @children[fileRelativePath]
-
 		# Check
-		if watcher
+		if @children[fileRelativePath]?
+			watcher = @children[fileRelativePath]
+			watcher.close(reason)  if watcher  # could be "fase" for reservation
 			delete @children[fileRelativePath]
-			watcher.close(reason)
 
 		# Chain
 		@
@@ -413,37 +488,35 @@ Watcher = class extends EventEmitter
 		me = @
 		config = @config
 
-		# Watch the file
-		watcher = watch(
+		# Watch the file if we aren't already
+		me.children[fileRelativePath] or= watch(
+			# Custom
 			path: fileFullPath
 			stat: fileStat
+			listeners:
+				'log': me.bubbler('log')
+				'change': (args...) ->
+					[changeType,path] = args
+					if changeType is 'delete' and path is fileFullPath
+						me.closeChild(fileRelativePath,'deleted')
+					me.bubble('change', args...)
+				'error': me.bubbler('error')
+			next: next
+
+			# Inherit
+			outputLog: config.outputLog
+			interval: config.interval
+			persistent: config.persistent
+			duplicateDelay: config.duplicateDelay
+			preferredMethod: config.preferredMethod
 			ignorePaths: config.ignorePaths
 			ignoreHiddenFiles: config.ignoreHiddenFiles
 			ignoreCommonPatterns: config.ignoreCommonPatterns
 			ignoreCustomPatterns: config.ignoreCustomPatterns
-			listeners:
-				'change': (args...) =>
-					[changeType,path] = args
-					if changeType is 'delete' and path is fileFullPath
-						@closeChild(fileRelativePath,'deleted')
-					me.bubble('change', args...)
-				'error': me.bubbler('error')
-			next: (args...) ->
-				# Prepare
-				[err] = args
-
-				# Stop if an error happened
-				return next?(err)  if err
-
-				# Store the child watcher in us
-				me.children[fileRelativePath] = watcher
-
-				# Proceed to the next file
-				next?(args...)
 		)
 
 		# Return
-		return watcher
+		return me.children[fileRelativePath]
 
 	# Is Ignored Path
 	isIgnoredPath: (path,opts={}) =>
@@ -462,6 +535,123 @@ Watcher = class extends EventEmitter
 		return ignore
 
 	###
+	Watch Children
+	next(err,result)
+	###
+	watchChildren: (next) ->
+		# Prepare
+		me = @
+		config = @config
+
+		# Cycle through the directory if necessary
+		if @isDirectory
+			balUtil.scandir(
+				# Path
+				path: @path
+
+				# Options
+				ignorePaths: config.ignorePaths
+				ignoreHiddenFiles: config.ignoreHiddenFiles
+				ignoreCommonPatterns: config.ignoreCommonPatterns
+				ignoreCustomPatterns: config.ignoreCustomPatterns
+				recurse: false
+
+				# Next
+				next: (err) ->
+					return next(err,err? is false)
+
+				# File and Directory Actions
+				action: (fileFullPath,fileRelativePath,nextFile,fileStat) ->
+					# Check we are still releveant
+					if me.state isnt 'active'
+						return nextFile(null,true)  # skip without error
+
+					# Watch this child
+					me.watchChild fileFullPath, fileRelativePath, fileStat, (err) ->
+						nextFile(err)
+			)
+		else
+			next(null,true)
+
+		# Chain
+		return @
+
+	###
+	Watch Self
+	###
+	watchSelf: (next) ->
+		# Prepare
+		me = @
+		config = @config
+
+		# Reset the method
+		@method = null
+
+		# Setup our watch methods
+		methods =
+			# Try with fsUtil.watch
+			watch: (next) ->
+				# Check
+				return next(null,false)  unless fsUtil.watch?
+
+				# Watch
+				safeExecute next, ->
+					me.fswatcher = fsUtil.watch me.path, (args...) ->
+						me.listener.apply(me,args)
+					me.method = 'watch'
+					return next(null,true)
+
+			# Try fsUtil.watchFile
+			watchFile: (next) ->
+				# Check
+				return next(null,false)  unless fsUtil.watchFile?
+
+				# Watch
+				safeExecute next, ->
+					watchFileOpts =
+						persistent: config.persistent
+						interval: config.interval
+					fsUtil.watchFile me.path, watchFileOpts, (args...) ->
+						me.listener.apply(me,args)
+					me.method = 'watchFile'
+					return next(null,true)
+
+		# Complete
+		complete = (success) ->
+			success ?= true
+			if success
+				me.state = 'active'
+				next(null,true)
+			else
+				me.close('failure')
+				next(null,false)
+
+		# Watch
+		if config.preferredMethod is 'watch'
+			# Try watch
+			methods.watch (err,success) ->
+				me.emit('error',err)  if err
+				return complete(success)  if success
+
+				# Try watchFile
+				methods.watchFile (err,success) ->
+					me.emit('error',err)  if err
+					return complete(success)
+		else
+			# Try watchFile
+			methods.watchFile (err,success) ->
+				me.emit('error',err)  if err
+				return complete(success)  if success
+
+				# Try watch
+				methods.watchFile (err,success) ->
+					me.emit('error',err)  if err
+					return complete(success)
+
+		# Chain
+		return @
+
+	###
 	Watch
 	Setup the native watching handlers for our path so we can receive updates on when things happen
 	If the next argument has been received, then add it is a once listener for the watching event
@@ -469,6 +659,7 @@ Watcher = class extends EventEmitter
 	If we are a directory, let's recurse
 	If we are deleted, then don't error but return the isWatching argument of our completion callback as false
 	Once watching has completed for this directory and all children, then emit the watching event
+	next(err,watcherInstance,success)
 	###
 	watch: (next) ->
 		# Prepare
@@ -501,68 +692,29 @@ Watcher = class extends EventEmitter
 		# Log
 		@log('debug',"watch: #{@path}")
 
-		# Prepare Start Watching
-		startWatching = =>
-			# Create a set of tasks
-			tasks = new balUtil.Group (err) =>
-				return @emit('watching',err,@,false)  if err
-				return @emit('watching',err,@,true)
-			tasks.total = 2
+		# Prepare
+		complete = (err,result) ->
+			# Prepare
+			err ?= null
+			result ?= true
 
-			# Cycle through the directory if necessary
-			if @isDirectory
-				balUtil.scandir(
-					# Path
-					path: @path
-
-					# Options
-					ignorePaths: config.ignorePaths
-					ignoreHiddenFiles: config.ignoreHiddenFiles
-					ignoreCommonPatterns: config.ignoreCommonPatterns
-					ignoreCustomPatterns: config.ignoreCustomPatterns
-					recurse: false
-
-					# Next
-					next: (err) ->
-						tasks.complete(err)
-
-					# File and Directory Actions
-					action: (fileFullPath,fileRelativePath,nextFile,fileStat) ->
-						# Watch it
-						me.watchChild fileFullPath, fileRelativePath, fileStat, (err) ->
-							nextFile(err)
-				)
+			# Handle
+			if err or !result
+				me.close()
+				me.emit('watching',err,me,false)
 			else
-				tasks.complete()
-
-			# Watch the current file/directory
-			try
-				# Try first with fsUtil.watchFile
-				watchFileOpts =
-					persistent: config.persistent
-					interval: config.interval
-				fsUtil.watchFile @path, watchFileOpts, (args...) ->
-					me.listener.apply(me,args)
-				@method = 'watchFile'
-			catch err
-				# Then try with fsUtil.watch
-				@fswatcher = fsUtil.watch @path, (args...) ->
-					me.listener.apply(me,args)
-				@method = 'watch'
-
-			# We are now watching so set the state as active
-			@state = 'active'
-			tasks.complete()
+				me.emit('watching',null,me,true)
 
 		# Check if we still exist
-		balUtil.exists @path, (exists) =>
+		balUtil.exists @path, (exists) ->
 			# Check
-			unless exists
-				# We don't exist anymore, move along
-				return @emit('watching',null,@,false)
+			return complete(null,false)  unless exists
 
 			# Start watching
-			startWatching()
+			me.watchSelf (err,result) ->
+				return complete(err,result)  if err or !result
+				me.watchChildren (err,result) ->
+					return complete(err,result)
 
 		# Chain
 		@
@@ -606,6 +758,7 @@ createWatcher = (opts,next) ->
 		watcher = new Watcher opts, (err) ->
 			next?(err,watcher)
 		watchers[path] = watcher
+		++watchersTotal
 
 	# Return
 	return watcher

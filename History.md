@@ -1,6 +1,6 @@
 ## History
 
-- v2.3.4 January 8, 2013
+- v2.3.4 February 5, 2013
 	- Better handling and detection of failed watching operations
 	- Better handling of duplicated events 
 	- Watching is now an atomic operation

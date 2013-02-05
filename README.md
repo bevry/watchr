@@ -1,4 +1,4 @@
-## Watchr: better file system watching for Node.js
+## Watchr: better file system watching for Node.js [![Build Status](https://secure.travis-ci.org/bevry/watchr.png?branch=master)](http://travis-ci.org/bevry/watchr)
 
 Watchr provides a normalised API the file watching APIs of different node versions, nested/recursive file and directory watching, and accurate detailed events for file/directory creations, updates, and deletions.
 

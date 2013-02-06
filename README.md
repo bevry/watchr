@@ -19,7 +19,7 @@ You install it via `npm install watchr` and use it via `require('watchr').watch(
 - `interval` (optional, defaults to `100`) for systems that poll to detect file changes, how often should it poll in millseconds
 - `persistent` (optional, defaults to `true`) whether or not we should keep the node process alive for as long as files are still being watched
 - `duplicateDelay` (optional, defaults to `1000`) sometimes events will fire really fast, this delay is set in place so we don't fire the same event within the timespan
-- `preferredMethod` (optional, defaults to `watch`) which watching method should try first? `watch` or `watchFile`
+- `preferredMethods` (optional, defaults to `['watch','watchFile']`) which order should we prefer our watching methods to be tried?
 - `ignorePaths` (optional, defaults to `false`) an array of full paths to ignore
 - `ignoreHiddenFiles` (optional, defaults to `false`) whether or not to ignored files which filename starts with a `.`
 - `ignoreCommonPatterns` (optional, defaults to `true`) whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
@@ -71,14 +71,14 @@ watchr.watch({
 			console.log('watching everything completed', watchers);
 		}
 
-		// Close watchers after 10 seconds
+		// Close watchers after 60 seconds
 		setTimeout(function(){
 			var i;
 			console.log('Stop watching our paths');
 			for ( i=0;  i<watchers.length; i++ ) {
 				watchers[i].close();
 			}
-		},10*1000);
+		},60*1000);
 	}
 });
 ```

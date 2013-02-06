@@ -73,11 +73,11 @@ Watcher = class extends EventEmitter
 		# Should we output log messages?
 		outputLog: false
 
-		# Interval (optional, defaults to `100`)
+		# Interval (optional, defaults to `5007`)
 		# for systems that poll to detect file changes, how often should it poll in millseconds
 		# if you are watching a lot of files, make this value larger otherwise you will have huge memory load
 		# only appliable to the `watchFile` watching method
-		interval: 100
+		interval: 5007
 
 		# Persistent (optional, defaults to `true`)
 		# whether or not we should keep the node process alive for as long as files are still being watched
@@ -89,9 +89,9 @@ Watcher = class extends EventEmitter
 		# within the duplicateDelay timespan
 		duplicateDelay: 1*1000
 
-		# Preferred Method (optional, detaults to `watch`)
-		# which node.js fsUtil watching method should we attempt first, either `watch` or `watchFile`
-		preferredMethod: 'watch'
+		# Preferred Methods (optional, defaults to `['watch','watchFile']`)
+		# In which order should use the watch methods when watching the file
+		preferredMethods: null
 
 		# Ignore Paths (optional, defaults to `false`)
 		# array of paths that we should ignore
@@ -117,6 +117,7 @@ Watcher = class extends EventEmitter
 		# Initialize our object variables for our instance
 		@children = {}
 		@config = balUtil.extend({},@config)
+		@config.preferredMethods = ['watch','watchFile']
 
 		# If next exists within the configuration, then use that as our next handler, if our next handler isn't already defined
 		# Eitherway delete the next handler from the config if it exists
@@ -159,11 +160,11 @@ Watcher = class extends EventEmitter
 	Setup our Instance
 	###
 	setup: (config) ->
-		# Path
-		@path = config.path
-
 		# Apply
 		balUtil.extend(@config,config)
+
+		# Path
+		@path = @config.path
 
 		# Stat
 		if @config.stat
@@ -387,7 +388,11 @@ Watcher = class extends EventEmitter
 										# Emit the event
 										@log('debug','determined create:',childFileFullPath,'via:',fileFullPath)
 										@emitSafe('change','create',childFileFullPath,childFileStat,null)
-										@watchChild(childFileFullPath,childFileRelativePath,childFileStat)
+										@watchChild({
+											fullPath: childFileFullPath,
+											relativePath: childFileRelativePath,
+											stat: childFileStat
+										})
 
 
 					# If we are a file, lets simply emit the change event
@@ -479,22 +484,22 @@ Watcher = class extends EventEmitter
 	Also instantiate the child with our instance's configuration where applicable
 	next(err,watcher)
 	###
-	watchChild: (fileFullPath,fileRelativePath,fileStat,next) ->
+	watchChild: (opts,next) ->
 		# Prepare
 		me = @
 		config = @config
 
 		# Watch the file if we aren't already
-		me.children[fileRelativePath] or= watch(
+		me.children[opts.relativePath] or= watch(
 			# Custom
-			path: fileFullPath
-			stat: fileStat
+			path: opts.fullPath
+			stat: opts.stat
 			listeners:
 				'log': me.bubbler('log')
 				'change': (args...) ->
 					[changeType,path] = args
-					if changeType is 'delete' and path is fileFullPath
-						me.closeChild(fileRelativePath,'deleted')
+					if changeType is 'delete' and path is opts.fullPath
+						me.closeChild(opts.relativePath,'deleted')
 					me.bubble('change', args...)
 				'error': me.bubbler('error')
 			next: next
@@ -504,7 +509,7 @@ Watcher = class extends EventEmitter
 			interval: config.interval
 			persistent: config.persistent
 			duplicateDelay: config.duplicateDelay
-			preferredMethod: config.preferredMethod
+			preferredMethods: config.preferredMethods
 			ignorePaths: config.ignorePaths
 			ignoreHiddenFiles: config.ignoreHiddenFiles
 			ignoreCommonPatterns: config.ignoreCommonPatterns
@@ -512,7 +517,7 @@ Watcher = class extends EventEmitter
 		)
 
 		# Return
-		return me.children[fileRelativePath]
+		return me.children[opts.relativePath]
 
 	###
 	Watch Children
@@ -542,13 +547,13 @@ Watcher = class extends EventEmitter
 					return next(err,watching)
 
 				# File and Directory Actions
-				action: (fileFullPath,fileRelativePath,nextFile,fileStat) ->
+				action: (fullPath,relativePath,nextFile,stat) ->
 					# Check we are still releveant
 					if me.state isnt 'active'
 						return nextFile(null,true)  # skip without error
 
 					# Watch this child
-					me.watchChild fileFullPath, fileRelativePath, fileStat, (err,watcher) ->
+					me.watchChild {fullPath,relativePath,stat}, (err,watcher) ->
 						nextFile(err)
 			)
 		else
@@ -621,21 +626,17 @@ Watcher = class extends EventEmitter
 			return next(null,true)
 
 		# Preferences
-		if config.preferredMethod is 'watch'
-			methodOne = methods.watch
-			methodTwo = methods.watchFile
-		else
-			methodOne = methods.watchFile
-			methodTwo = methods.watch
+		methodOne = me.config.preferredMethods[0]
+		methodTwo = me.config.preferredMethods[1]
 
 		# Try first
-		methodOne (err1,watching) ->
+		methods[methodOne] (err1,watching) ->
 			# Move on if succeeded
 			return complete(watching)  if watching
 			# Otherwise...
 
 			# Try second
-			methodTwo (err2,watching) ->
+			methods[methodTwo] (err2,watching) ->
 				# Move on if succeeded
 				return complete(watching)  if watching
 				# Otherwise...
@@ -752,8 +753,23 @@ createWatcher = (opts,next) ->
 		next?(null,watcher)
 	else
 		# We don't, so let's create a new one
+		attempt = 0
 		watcher = new Watcher opts, (err) ->
-			next?(err,watcher)
+			# Continue if we passed
+			return next?(err,watcher)  if !err or attempt isnt 0
+			++attempt
+
+			# Log
+			watcher.log('debug', "Preferred method failed, trying methods in reverse order", err)
+
+			# Otherwise try again with the other preferred method
+			watcher
+				.setup(
+					preferredMethods: watcher.config.preferredMethods.reverse()
+				)
+				.watch()
+
+		# Save the watcher
 		watchers[path] = watcher
 		++watchersTotal
 

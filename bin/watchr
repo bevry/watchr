@@ -31,13 +31,13 @@ watchr.watch({
 			console.log('watching everything completed', watchers);
 		}
 
-		// Close watchers after 10 seconds
+		// Close watchers after 60 seconds
 		setTimeout(function(){
 			var i;
 			console.log('Stop watching our paths');
 			for ( i=0;  i<watchers.length; i++ ) {
 				watchers[i].close();
 			}
-		},10*1000);
+		},60*1000);
 	}
 });

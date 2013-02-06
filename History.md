@@ -1,5 +1,12 @@
 ## History
 
+- v2.3.7 February 6, 2013
+	- Changed the `preferredMethod` option into `preferredMethods` which accepts an array, defaults to `['watch','watchFile']`
+	- If the watch action fails at the eve level we will try again with the preferredMethods reversed
+		- This solves [issue #31](https://github.com/bevry/watchr/issues/31) where watching of large files would fail
+	- Changed the `interval` option to default to `5007` (recommended by node) instead of `100` as it was before
+		- The `watch` method provides us with immediate notification of changes without utilising polling, however the `watch` method fails for large amounts of files, in which case we will fall back to the `watchFile` method that will use this option, if the option is too small we will be constantly polling the large amount of files for changes using up all the CPU and memory, hence the change into a larger increment which has no CPU and memory impact.
+
 - v2.3.6 February 6, 2013
 	- Fixed fallback when preferredMethod is `watchFile`
 

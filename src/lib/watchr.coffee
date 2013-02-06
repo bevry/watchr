@@ -575,12 +575,13 @@ Watcher = class extends EventEmitter
 
 				# Watch
 				try
-					me.fswatcher = fsUtil.watch(me.path)
+					me.fswatcher = fsUtil.watch(me.path, me.listener)
+					# must pass the listener here instead of via me.fswatcher.on('change', me.listener)
+					# as the latter is not supported on node 0.6 (only 0.8+)
 				catch err
 					return next(err,false)
 
 				# Apply
-				me.fswatcher.on('change', me.listener)
 				me.method = 'watch'
 				return next(null,true)
 

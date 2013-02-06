@@ -139,6 +139,22 @@ Watcher = class extends EventEmitter
 		@emit('log',args...)
 		@
 
+	# Is Ignored Path
+	isIgnoredPath: (path,opts={}) =>
+		# Ignore?
+		ignore = balUtil.isIgnoredPath(path,{
+			ignorePaths: opts.ignorePaths ? @config.ignorePaths
+			ignoreHiddenFiles: opts.ignoreHiddenFiles ? @config.ignoreHiddenFiles
+			ignoreCommonPatterns: opts.ignoreCommonPatterns ? @config.ignoreCommonPatterns
+			ignoreCustomPatterns: opts.ignoreCustomPatterns ? @config.ignoreCustomPatterns
+		})
+
+		# Log
+		@log('debug',"ignore: #{path} #{if ignore then 'yes' else 'no'}")
+
+		# Return
+		return ignore
+
 	###
 	Setup our Instance
 	###
@@ -461,6 +477,7 @@ Watcher = class extends EventEmitter
 	Setup watching for a child
 	Bubble events of the child into our instance
 	Also instantiate the child with our instance's configuration where applicable
+	next(err,watcher)
 	###
 	watchChild: (fileFullPath,fileRelativePath,fileStat,next) ->
 		# Prepare
@@ -497,25 +514,9 @@ Watcher = class extends EventEmitter
 		# Return
 		return me.children[fileRelativePath]
 
-	# Is Ignored Path
-	isIgnoredPath: (path,opts={}) =>
-		# Ignore?
-		ignore = balUtil.isIgnoredPath(path,{
-			ignorePaths: opts.ignorePaths ? @config.ignorePaths
-			ignoreHiddenFiles: opts.ignoreHiddenFiles ? @config.ignoreHiddenFiles
-			ignoreCommonPatterns: opts.ignoreCommonPatterns ? @config.ignoreCommonPatterns
-			ignoreCustomPatterns: opts.ignoreCustomPatterns ? @config.ignoreCustomPatterns
-		})
-
-		# Log
-		@log('debug',"ignore: #{path} #{if ignore then 'yes' else 'no'}")
-
-		# Return
-		return ignore
-
 	###
 	Watch Children
-	next(err,result)
+	next(err,watching)
 	###
 	watchChildren: (next) ->
 		# Prepare
@@ -537,7 +538,8 @@ Watcher = class extends EventEmitter
 
 				# Next
 				next: (err) ->
-					return next(err,err? is false)
+					watching = !err
+					return next(err,watching)
 
 				# File and Directory Actions
 				action: (fileFullPath,fileRelativePath,nextFile,fileStat) ->
@@ -546,7 +548,7 @@ Watcher = class extends EventEmitter
 						return nextFile(null,true)  # skip without error
 
 					# Watch this child
-					me.watchChild fileFullPath, fileRelativePath, fileStat, (err) ->
+					me.watchChild fileFullPath, fileRelativePath, fileStat, (err,watcher) ->
 						nextFile(err)
 			)
 		else
@@ -569,6 +571,7 @@ Watcher = class extends EventEmitter
 		# Setup our watch methods
 		methods =
 			# Try with fsUtil.watch
+			# next(err,watching)
 			watch: (next) ->
 				# Check
 				return next(null,false)  unless fsUtil.watch?
@@ -586,6 +589,7 @@ Watcher = class extends EventEmitter
 				return next(null,true)
 
 			# Try fsUtil.watchFile
+			# next(err,watching)
 			watchFile: (next) ->
 				# Check
 				return next(null,false)  unless fsUtil.watchFile?
@@ -606,36 +610,40 @@ Watcher = class extends EventEmitter
 				return next(null,true)
 
 		# Complete
-		complete = (success) ->
-			success ?= true
-			if success
-				me.state = 'active'
-				next(null,true)
-			else
+		complete = (watching) ->
+			# Error?
+			if !watching
 				me.close('failure')
-				next(null,false)
+				return next(null,false)
 
-		# Watch
+			# Success
+			me.state = 'active'
+			return next(null,true)
+
+		# Preferences
 		if config.preferredMethod is 'watch'
-			# Try watch
-			methods.watch (err,success) ->
-				me.emit('error',err)  if err
-				return complete(success)  if success
-
-				# Try watchFile
-				methods.watchFile (err,success) ->
-					me.emit('error',err)  if err
-					return complete(success)
+			methodOne = methods.watch
+			methodTwo = methods.watchFile
 		else
-			# Try watchFile
-			methods.watchFile (err,success) ->
-				me.emit('error',err)  if err
-				return complete(success)  if success
+			methodOne = methods.watchFile
+			methodTwo = methods.watch
 
-				# Try watch
-				methods.watchFile (err,success) ->
-					me.emit('error',err)  if err
-					return complete(success)
+		# Try first
+		methodOne (err1,watching) ->
+			# Move on if succeeded
+			return complete(watching)  if watching
+			# Otherwise...
+
+			# Try second
+			methodTwo (err2,watching) ->
+				# Move on if succeeded
+				return complete(watching)  if watching
+				# Otherwise...
+
+				# Log errors and fail
+				me.emit('error',err1)  if err1
+				me.emit('error',err2)  if err2
+				return complete(false)
 
 		# Chain
 		return @
@@ -700,10 +708,10 @@ Watcher = class extends EventEmitter
 			return complete(null,false)  unless exists
 
 			# Start watching
-			me.watchSelf (err,result) ->
-				return complete(err,result)  if err or !result
-				me.watchChildren (err,result) ->
-					return complete(err,result)
+			me.watchSelf (err,watching) ->
+				return complete(err,watching)  if err or !watching
+				me.watchChildren (err,watching) ->
+					return complete(err,watching)
 
 		# Chain
 		@

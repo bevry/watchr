@@ -1,5 +1,8 @@
 ## History
 
+- v2.3.6 February 6, 2013
+	- Fixed fallback when preferredMethod is `watchFile`
+
 - v2.3.5 February 6, 2013
 	- Fixed uncaught exceptions when intialising watchers under certain circumstances
 

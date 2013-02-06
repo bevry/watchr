@@ -14,27 +14,6 @@ balUtil = require('bal-util')
 # This provides us with the event system that we use for binding and trigger events
 EventEmitter = require('events').EventEmitter
 
-# Require the optional domain logic introduced in node 0.8
-try
-	domain = require('domain')
-catch err
-	domain = false
-
-# Safe Execute
-# Wrap the method in a domain if we can, otherwise wrap it in a try catch
-# If an error occurs, go to the next callback
-safeExecute = (next,method) ->
-	if domain
-		d = domain.create()
-		d.on 'error', (err) ->
-			return next(err,false)
-		d.run(method)
-	else
-		try
-			method()
-		catch err
-			next(err,false)
-
 ###
 Now to make watching files more convient and managed, we'll create a class which we can use to attach to each file.
 It'll provide us with the API and abstraction we need to accomplish difficult things like recursion.
@@ -312,7 +291,7 @@ Watcher = class extends EventEmitter
 	- for renamed files: 'rename', fullPath, currentStat, previousStat, newFullPath
 	- rename is possible as the stat.ino is the same for the delete and create
 	###
-	listener: (args...) ->
+	listener: (args...) =>
 		# Prepare
 		me = @
 		fileFullPath = @path
@@ -321,7 +300,7 @@ Watcher = class extends EventEmitter
 		fileExists = null
 
 		# Log
-		@log('debug',"watch event triggered on #{@path}\n", args)
+		@log('debug',"watch event triggered on #{@path}:", args)
 
 		# Prepare: is the same?
 		isTheSame = =>
@@ -595,26 +574,35 @@ Watcher = class extends EventEmitter
 				return next(null,false)  unless fsUtil.watch?
 
 				# Watch
-				safeExecute next, ->
-					me.fswatcher = fsUtil.watch me.path, (args...) ->
-						me.listener.apply(me,args)
-					me.method = 'watch'
-					return next(null,true)
+				try
+					me.fswatcher = fsUtil.watch(me.path)
+				catch err
+					return next(err,false)
+
+				# Apply
+				me.fswatcher.on('change', me.listener)
+				me.method = 'watch'
+				return next(null,true)
 
 			# Try fsUtil.watchFile
 			watchFile: (next) ->
 				# Check
 				return next(null,false)  unless fsUtil.watchFile?
 
+				# Options
+				watchFileOpts =
+					persistent: config.persistent
+					interval: config.interval
+
 				# Watch
-				safeExecute next, ->
-					watchFileOpts =
-						persistent: config.persistent
-						interval: config.interval
-					fsUtil.watchFile me.path, watchFileOpts, (args...) ->
-						me.listener.apply(me,args)
-					me.method = 'watchFile'
-					return next(null,true)
+				try
+					fsUtil.watchFile(me.path, watchFileOpts, me.listener)
+				catch err
+					return next(err,false)
+
+				# Apply
+				me.method = 'watchFile'
+				return next(null,true)
 
 		# Complete
 		complete = (success) ->

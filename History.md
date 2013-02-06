@@ -1,5 +1,8 @@
 ## History
 
+- v2.3.5 February 6, 2013
+	- Fixed uncaught exceptions when intialising watchers under certain circumstances
+
 - v2.3.4 February 5, 2013
 	- Better handling and detection of failed watching operations
 	- Better handling of duplicated events 

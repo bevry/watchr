@@ -86,8 +86,8 @@ watchr.watch({
 You can test the above code snippet by running the following:
 
 ```
-npm install watchr
-./node_modules/.bin/watchr
+npm install -g watchr
+watchr
 ```
 
 

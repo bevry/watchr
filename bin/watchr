@@ -1,43 +1,38 @@
 #!/usr/bin/env node
-// Require
-var watchr = require(__dirname+'/../out/lib/watchr');
 
-// Watch a directory or file
-console.log('Watch our paths');
-watchr.watch({
-	paths: [process.cwd()],
-	listeners: {
-		log: function(logLevel){
-			console.log('a log message occured:', arguments);
-		},
-		error: function(err){
-			console.log('an error occured:', err);
-		},
-		watching: function(err,watcherInstance,isWatching){
-			if (err) {
-				console.log("watching the path " + watcherInstance.path + " failed with error", err);
-			} else {
-				console.log("watching the path " + watcherInstance.path + " completed");
-			}
-		},
-		change: function(changeType,filePath,fileCurrentStat,filePreviousStat){
-			console.log('a change event occured:',arguments);
-		}
-	},
-	next: function(err,watchers){
-		if (err) {
-			return console.log("watching everything failed with error", err);
-		} else {
-			console.log('watching everything completed', watchers);
-		}
+// Handle command line options.
+var optimist = require('optimist');
+var argv = optimist
+  .usage('Usage: $0 [-w paths,to,watch] -- command arg1 arg2...')
+  .options({
+    watch: {
+      alias: 'w',
+      type: 'string',
+      desc: 'A path or comma-separated paths to watch.',
+      'default': process.cwd()
+    }
+  })
+  .check(function () {
+    if (!optimist.argv._[0]) throw new Error('Please specify a command.');
+  })
+  .argv;
 
-		// Close watchers after 60 seconds
-		setTimeout(function(){
-			var i;
-			console.log('Stop watching our paths');
-			for ( i=0;  i<watchers.length; i++ ) {
-				watchers[i].close();
-			}
-		},60*1000);
-	}
-});
+// Require dependencies.
+var spawn = require('child_process').spawn;
+var watchr = require('..');
+
+// Define the callback listener.
+var command = argv._[0];
+var args = argv._.slice(1);
+var run = function () {
+  var child = spawn(command, args);
+  child.stdout.pipe(process.stdout);
+  child.stderr.pipe(process.stderr);
+  child.stdin.end();
+};
+
+// Run immediately.
+run();
+
+// Start watching.
+watchr.watch({paths: argv.watch.split(','), listener: run});

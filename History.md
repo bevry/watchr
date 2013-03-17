@@ -1,5 +1,9 @@
 ## History
 
+- v2.3.8 March 17, 2013
+	- Fix `Object #<Object> has no method 'emit'` error
+		- Thanks to [Casey Foster](https://github.com/caseywebdev) for [pull request #32](https://github.com/bevry/watchr/pull/32)
+
 - v2.3.7 February 6, 2013
 	- Changed the `preferredMethod` option into `preferredMethods` which accepts an array, defaults to `['watch','watchFile']`
 	- If the watch action fails at the eve level we will try again with the preferredMethods reversed

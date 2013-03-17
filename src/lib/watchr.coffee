@@ -402,13 +402,13 @@ Watcher = class extends EventEmitter
 						@emitSafe('change','update',fileFullPath,currentStat,previousStat)
 
 		# Check if the file still exists
-		balUtil.exists fileFullPath, (exists) ->
+		balUtil.exists fileFullPath, (exists) =>
 			# Apply
 			fileExists = exists
 
 			# If the file still exists, then update the stat
 			if fileExists
-				balUtil.stat fileFullPath, (err,stat) ->
+				balUtil.stat fileFullPath, (err,stat) =>
 					# Check
 					return @emit('error',err)  if err
 

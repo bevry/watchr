@@ -16,7 +16,7 @@ You install it via `npm install watchr` and use it via `require('watchr').watch(
 	- when using the `path` configuration option: `err, watcherInstance`
 	- when using the `paths` configuration option: `err, [watcherInstance,...]` 
 - `stat` (optional, defaults to `null`) a file stat object to use for the path, instead of fetching a new one
-- `interval` (optional, defaults to `100`) for systems that poll to detect file changes, how often should it poll in millseconds
+- `interval` (optional, defaults to `5007`) for systems that poll to detect file changes, how often should it poll in millseconds
 - `persistent` (optional, defaults to `true`) whether or not we should keep the node process alive for as long as files are still being watched
 - `duplicateDelay` (optional, defaults to `1000`) sometimes events will fire really fast, this delay is set in place so we don't fire the same event within the timespan. Set to falsey to perform no duplicate detection.
 - `preferredMethods` (optional, defaults to `['watch','watchFile']`) which order should we prefer our watching methods to be tried?

@@ -1,5 +1,8 @@
 ## History
 
+- v2.3.9 March 17, 2013
+	- Made it so if `duplicateDelay` is falsey we will not do a duplicate check
+
 - v2.3.8 March 17, 2013
 	- Fix `Object #<Object> has no method 'emit'` error
 		- Thanks to [Casey Foster](https://github.com/caseywebdev) for [pull request #32](https://github.com/bevry/watchr/pull/32)

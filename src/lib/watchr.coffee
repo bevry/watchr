@@ -87,6 +87,7 @@ Watcher = class extends EventEmitter
 		# Duplicate Delay (optional, defaults to `1000`)
 		# sometimes events will fire really fast, this delay is set in place to ensure we don't fire the same event
 		# within the duplicateDelay timespan
+		# Setting to falsey will perform no duplicate detection
 		duplicateDelay: 1*1000
 
 		# Preferred Methods (optional, defaults to `['watch','watchFile']`)
@@ -260,22 +261,24 @@ Watcher = class extends EventEmitter
 		me = @
 		config = @config
 
-		# Clear duplicate timeout
-		clearTimeout(@cacheTimeout)  if @cacheTimeout?
-		@cacheTimeout = setTimeout(
-			->
-				me.cachedEvents = []
-				me.cacheTimeout = null
-			config.duplicateDelay
-		)
-		@cachedEvents ?= []
+		# Duplicate detection?
+		if config.duplicateDelay
+			# Clear duplicate timeout
+			clearTimeout(@cacheTimeout)  if @cacheTimeout?
+			@cacheTimeout = setTimeout(
+				->
+					me.cachedEvents = []
+					me.cacheTimeout = null
+				config.duplicateDelay
+			)
+			@cachedEvents ?= []
 
-		# Check duplicate
-		thisEvent = args.toString()
-		if thisEvent in @cachedEvents
-			@log('debug',"event ignored on #{@path} due to duplicate:", args)
-			return @
-		@cachedEvents.push(thisEvent)
+			# Check duplicate
+			thisEvent = args.toString()
+			if thisEvent in @cachedEvents
+				@log('debug',"event ignored on #{@path} due to duplicate:", args)
+				return @
+			@cachedEvents.push(thisEvent)
 
 		# Fire the event
 		@emit(args...)

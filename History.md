@@ -1,5 +1,8 @@
 ## History
 
+- v2.3.10 April 1, 2013
+	- Dependency upgrades
+
 - v2.3.9 March 17, 2013
 	- Made it so if `duplicateDelay` is falsey we will not do a duplicate check
 

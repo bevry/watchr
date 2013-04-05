@@ -6,9 +6,13 @@ pathUtil = require('path')
 # This provides us with what we need to interact with the file system
 fsUtil = require('fs')
 
-# Require the balUtil module
-# This provides us with various flow logic and path utilities
+# Require our helper modules
 balUtil = require('bal-util')
+safefs = require('safefs')
+extendr = require('extendr')
+eachr = require('eachr')
+typeChecker = require('typechecker')
+{TaskGroup} = require('taskgroup')
 
 # Require the node.js event emitter
 # This provides us with the event system that we use for binding and trigger events
@@ -117,7 +121,7 @@ Watcher = class extends EventEmitter
 	constructor: (config,next) ->
 		# Initialize our object variables for our instance
 		@children = {}
-		@config = balUtil.extend({},@config)
+		@config = extendr.extend({},@config)
 		@config.preferredMethods = ['watch','watchFile']
 
 		# If next exists within the configuration, then use that as our next handler, if our next handler isn't already defined
@@ -162,7 +166,7 @@ Watcher = class extends EventEmitter
 	###
 	setup: (config) ->
 		# Apply
-		balUtil.extend(@config,config)
+		extendr.extend(@config,config)
 
 		# Path
 		@path = @config.path
@@ -221,15 +225,15 @@ Watcher = class extends EventEmitter
 			listeners = eventName
 
 			# Array of change listeners
-			if balUtil.isArray(listeners)
+			if typeChecker.isArray(listeners)
 				for listener in listeners
 					@listen('change',listener)
 
 			# Object of event listeners
-			else if balUtil.isPlainObject(listeners)
+			else if typeChecker.isPlainObject(listeners)
 				for own eventName,listenerArray of listeners
 					# Array of event listeners
-					if balUtil.isArray(listenerArray)
+					if typeChecker.isArray(listenerArray)
 						for listener in listenerArray
 							@listen(eventName,listener)
 					# Single event listener
@@ -351,13 +355,13 @@ Watcher = class extends EventEmitter
 					if @isDirectory
 						if isTheSame() is false
 							# Scan children
-							balUtil.readdir fileFullPath, (err,newFileRelativePaths) =>
+							safefs.readdir fileFullPath, (err,newFileRelativePaths) =>
 								# Error?
 								return @emit('error',err)  if err
 
 								# Check for deleted files
 								# by cycling through our known children
-								balUtil.each @children, (childFileWatcher,childFileRelativePath) =>
+								eachr @children, (childFileWatcher,childFileRelativePath) =>
 									# Skip if this is a new file (not a deleted file)
 									return  if childFileRelativePath in newFileRelativePaths
 
@@ -372,7 +376,7 @@ Watcher = class extends EventEmitter
 									@closeChild(childFileRelativePath,'deleted')
 
 								# Check for new files
-								balUtil.each newFileRelativePaths, (childFileRelativePath) =>
+								eachr newFileRelativePaths, (childFileRelativePath) =>
 									# Skip if we are already watching this file
 									return  if @children[childFileRelativePath]?
 									@children[childFileRelativePath] = false  # reserve this file
@@ -384,7 +388,7 @@ Watcher = class extends EventEmitter
 									return  if @isIgnoredPath(childFileFullPath)
 
 									# Fetch the stat for the new file
-									balUtil.stat childFileFullPath, (err,childFileStat) =>
+									safefs.stat childFileFullPath, (err,childFileStat) =>
 										# Error?
 										return @emit('error',err)  if err
 
@@ -405,13 +409,13 @@ Watcher = class extends EventEmitter
 						@emitSafe('change','update',fileFullPath,currentStat,previousStat)
 
 		# Check if the file still exists
-		balUtil.exists fileFullPath, (exists) ->
+		safefs.exists fileFullPath, (exists) ->
 			# Apply
 			fileExists = exists
 
 			# If the file still exists, then update the stat
 			if fileExists
-				balUtil.stat fileFullPath, (err,stat) ->
+				safefs.stat fileFullPath, (err,stat) ->
 					# Check
 					return me.emit('error',err)  if err
 
@@ -670,7 +674,7 @@ Watcher = class extends EventEmitter
 		# Ensure Stat
 		if @stat? is false
 			# Fetch the stat
-			balUtil.stat config.path, (err,stat) =>
+			safefs.stat config.path, (err,stat) =>
 				# Error
 				return @emit('error',err)  if err
 
@@ -707,7 +711,7 @@ Watcher = class extends EventEmitter
 				me.emit('watching',null,me,true)
 
 		# Check if we still exist
-		balUtil.exists @path, (exists) ->
+		safefs.exists @path, (exists) ->
 			# Check
 			return complete(null,false)  unless exists
 
@@ -741,7 +745,7 @@ createWatcher = (opts,next) ->
 		delete opts.next
 
 	# Only create a watchr if the path exists
-	unless balUtil.existsSync(path)
+	unless safefs.existsSync(path)
 		next?(null,null)
 		return
 
@@ -805,17 +809,17 @@ watch = (opts,next) ->
 		delete opts.paths
 
 		# Check its format
-		if balUtil.isArray(paths)
+		if typeChecker.isArray(paths)
 			# Prepare
-			tasks = new balUtil.Group (err) ->
+			tasks = new TaskGroup().setConfig(concurrency:0).on 'complete', (err) ->
 				next?(err,result)
-			for path in paths
-				tasks.push {path}, (complete) ->
-					localOpts = balUtil.extend({},opts)
-					localOpts.path = @path
+			paths.forEach (path) ->
+				tasks.addTask (complete) ->
+					localOpts = extendr.extend({},opts)
+					localOpts.path = path
 					watcher = createWatcher(localOpts,complete)
 					result.push(watcher)  if watcher
-			tasks.async()
+			tasks.run()
 
 		# Paths is actually a single path
 		else

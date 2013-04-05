@@ -1,6 +1,6 @@
 {
 	"name": "watchr",
-	"version": "2.3.10",
+	"version": "2.4.0",
 	"description": "Better file system watching for Node.js",
 	"homepage": "https://github.com/bevry/watchr",
 	"keywords": [
@@ -30,11 +30,17 @@
 		"node": ">=0.4"
 	},
 	"dependencies": {
-		"bal-util": "~1.18.0"
+		"bal-util": "~2.0.0",
+		"typechecker": "~2.0.1",
+		"extendr": "~2.0.1",
+		"eachr": "~2.0.2",
+		"safefs": "~3.0.1",
+		"taskgroup": "~3.1.1"
 	},
 	"devDependencies": {
 		"coffee-script": "~1.6.2",
-		"joe": "~1.1.2"
+		"joe": "~1.2.0",
+		"joe-reporter-console": "~1.2.1"
 	},
 	"directories": {
 		"lib": "./out/lib"
@@ -43,7 +49,7 @@
 		"watchr": "./bin/watchr"
 	},
 	"scripts": {
-		"test": "node ./out/test/everything.test.js --joe-reporter=console"
+		"test": "node ./out/test/everything.test.js"
 	},
-	"main": "./out/lib/watchr"
+	"main": "./out/lib/watchr.js"
 }

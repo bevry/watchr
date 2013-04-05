@@ -1,4 +1,4 @@
-## Watchr: better file system watching for Node.js
+# Watchr: better file system watching for Node.js
 
 [![Build Status](https://secure.travis-ci.org/bevry/watchr.png?branch=master)](http://travis-ci.org/bevry/watchr)
 [![NPM version](https://badge.fury.io/js/watchr.png)](https://npmjs.org/package/watchr)

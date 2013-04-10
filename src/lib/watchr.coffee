@@ -323,13 +323,27 @@ Watcher = class extends EventEmitter
 		previousStat = @stat
 		fileExists = null
 
+		# args contains what has happened
+		[event, fragment] = args
+
+		# Might be a file we don't care about
+		return if @isIgnoredPath(fragment)
+
+		# Renaming to self will fire a change event
+		if not @isDirectory
+			parts = @path.split('/')
+			filename = parts[parts.length-1]
+			if event == 'rename' and fragment == filename
+				@log('debug',"ignoring rename of #{filename} to itself")
+				return
+
 		# Log
 		@log('debug',"watch event triggered on #{@path}:", args)
 
 		# Prepare: is the same?
 		isTheSame = =>
 			if currentStat? and previousStat?
-				if currentStat.size is previousStat.size and currentStat.mtime.toString() is previousStat.mtime.toString()
+				if event != 'change' and currentStat.size is previousStat.size and currentStat.mtime.toString() is previousStat.mtime.toString()
 					return true
 			return false
 

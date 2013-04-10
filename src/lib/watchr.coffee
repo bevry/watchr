@@ -278,7 +278,9 @@ Watcher = class extends EventEmitter
 			@cachedEvents ?= []
 
 			# Check duplicate
-			thisEvent = args.toString()
+			thisEvent = JSON.stringify(args)
+			# ^ we use this instead of toString as stringify is recursive
+			# which is needed to detect the size change on the stats
 			if thisEvent in @cachedEvents
 				@log('debug',"event ignored on #{@path} due to duplicate:", args)
 				return @

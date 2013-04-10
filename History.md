@@ -1,5 +1,9 @@
 ## History
 
+- v2.4.2 April 10, 2013
+	- File copies will now trigger events throughout the copy rather than just at the start of the copy
+		- Close [issue #35](https://github.com/bevry/watchr/issues/35)
+
 - v2.4.1 April 10, 2013
 	- Fixed bubblr events
 	- Fixed swap file detection

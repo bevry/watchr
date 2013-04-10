@@ -33,6 +33,7 @@ The following events are available to your via the listeners:
 
 - `log` for debugging, receives the arguments `logLevel ,args...`
 - `error` for gracefully listening to error events, receives the arguments `err`
+	- you should always have an error listener, otherwise node.js's behavior is to throw the error and possibly crash your application, see [#40](https://github.com/bevry/watchr/issues/40)
 - `watching` for when watching of the path has completed, receives the arguments `err, isWatching`
 - `change` for listening to change events, receives the arguments `changeType, fullPath, currentStat, previousStat`, received arguments will be:
 	- for updated files: `'update', fullPath, currentStat, previousStat`
@@ -95,18 +96,34 @@ watchr
 ```
 
 
-## Support
 
+## Known Issues
+
+- [Text Editor swap files on saving can throw it off.](https://github.com/bevry/watchr/issues/33)
+	- We're working on it. Workaround for the meantime:
+		- For Users:
+			- TextMate: Turn off atomic saves. [Guide.](http://manual.macromates.com/en/saving_files.html)
+			- Sublime Text 3: Add `"atomic_saves": false` to your user preferences
+			- VIM: Disable the `set noswapfile` option and enable the `set nobackup` option
+		- For Watchr implementations:
+			- Set `preferredMethods` to `['watchFile','watch']` that will use the old polling mechanism (slower, but handles this use case)
+
+- [`ENOENT` errors are emitted when dead links a broken symlink is encountered](https://github.com/bevry/watchr/issues/42)
+	- We're working on it. No known workaround.
+
+
+
+## Support
 Support can be found in the [GitHub Issue Tracker](https://github.com/bevry/watchr/issues)
 
 
-## History
 
+## History
 You can discover the history inside the [History.md](https://github.com/bevry/watchr/blob/master/History.md#files) file
 
 
-## License
 
+## License
 Licensed under the incredibly [permissive](http://en.wikipedia.org/wiki/Permissive_free_software_licence) [MIT License](http://creativecommons.org/licenses/MIT/)
 <br/>Copyright &copy; 2012+ [Bevry Pty Ltd](http://bevry.me)
 <br/>Copyright &copy; 2011 [Benjamin Lupton](http://balupton.com)

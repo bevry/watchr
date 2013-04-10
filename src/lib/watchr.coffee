@@ -328,6 +328,17 @@ Watcher = class extends EventEmitter
 		# Log
 		@log('debug',"watch event triggered on #{@path}:", args)
 
+		# Can we trust the original event handlers?
+		# We only trust the change event and if we already know about the file it is reporting
+		# Otherwise chances are something else has changed in the directory than just the file being reported
+		if args[0] is 'change' and @children[args[1]]
+			return (=>
+				childFileRelativePath = args[1]
+				childFileWatcher = @children[args[1]]
+				@log('debug','forwarding initial change detection to child:',childFileRelativePath,'via:',fileFullPath)
+				childFileWatcher.listener('change','.')
+			)()
+
 		# Prepare: is the same?
 		isTheSame = =>
 			if currentStat? and previousStat?
@@ -361,40 +372,26 @@ Watcher = class extends EventEmitter
 								# Error?
 								return @emit('error',err)  if err
 
-								# Prepare
-								deletedFiles = []
-								createdFiles = []
-								tasks = new TaskGroup().setConfig(concurrency:0).once 'complete', =>
-									[eventName,childFileRelativePath] = args
-									# Check we are from watch method
-									return  unless typeChecker.isString(eventName)
-
-									# Check that we can be trusted (can't trust the other event types)
-									return  unless eventName is 'change'
-
-									# Note
-									@log('debug', 'determined child file change:', childFileRelativePath, 'via:', fileFullPath)
-
-									# Check that we haven't already taken care of the file
-									if childFileRelativePath in deletedFiles or childFileRelativePath in createdFiles
-										@log('debug', 'that had already been taken care of:', childFileRelativePath, 'via:', fileFullPath)
+								# Find changed files if we do not have reliable data that something specific has changed
+								# currently we only consider it unreliable if we are using the watch method and didn't receive a path with the event
+								# on most machines, we will receive a path, and it will be accurate
+								# the watchFile method also tends to be quite accurate
+								# so under this use case, we may get something like ['rename',null] which may mean a swap file was renamed to a file
+								# that we are already aware about so we'll have to check the files we are aware about for changes
+								# if we get something like ['rename','.subl111.tmp'] - we hope that the correct change event already fired
+								if typeChecker.isString(args[0]) and args[1] is null
+									eachr @children, (childFileWatcher,childFileRelativePath) =>
+										# Skip if the file has been deleted
+										return  unless childFileRelativePath in newFileRelativePaths
+										return  unless childFileWatcher
+										@log('debug','forwarding extensive change detection to child:',childFileRelativePath,'via:',fileFullPath)
+										childFileWatcher.listener('change','.')
 										return
 
-									# Check that we have a child watch
-									childFileWatcher = @children[childFileRelativePath]
-									unless childFileWatcher
-										@log('debug', 'but had no watchr for the child file:', childFileRelativePath, 'via:', fileFullPath)
-										return
-
-									# Forward the change event onto the child file watcher
-									@log('debug', 'forwarding child file change onto child watcher:', childFileRelativePath, 'via:', fileFullPath)
-									return childFileWatcher.listener('change','.')
-
-								# Check for deleted files
-								# by cycling through our known children
-								eachr @children, (childFileWatcher,childFileRelativePath) =>  tasks.addTask (complete) =>
-									# Skip if this is a new file (not a deleted file)
-									return complete()  if childFileRelativePath in newFileRelativePaths
+								# Find deleted files
+								eachr @children, (childFileWatcher,childFileRelativePath) =>
+									# Skip if the file still exists
+									return  if childFileRelativePath in newFileRelativePaths
 
 									# Fetch full path
 									childFileFullPath = pathUtil.join(fileFullPath,childFileRelativePath)
@@ -402,18 +399,17 @@ Watcher = class extends EventEmitter
 									# Skip if ignored file
 									if @isIgnoredPath(childFileFullPath)
 										@log('debug','ignored delete:',childFileFullPath,'via:',fileFullPath)
-										return complete()
+										return
 
 									# Emit the event and note the change
 									@log('debug','determined delete:',childFileFullPath,'via:',fileFullPath)
 									@closeChild(childFileRelativePath,'deleted')
-									deletedFiles.push(childFileRelativePath)
-									return complete()
+									return
 
-								# Check for new files
-								eachr newFileRelativePaths, (childFileRelativePath) =>  tasks.addTask (complete) =>
+								# Find new files
+								eachr newFileRelativePaths, (childFileRelativePath) =>
 									# Skip if we are already watching this file
-									return complete()  if @children[childFileRelativePath]?
+									return  if @children[childFileRelativePath]?
 									@children[childFileRelativePath] = false  # reserve this file
 
 									# Fetch full path
@@ -422,14 +418,13 @@ Watcher = class extends EventEmitter
 									# Skip if ignored file
 									if @isIgnoredPath(childFileFullPath)
 										@log('debug','ignored create:',childFileFullPath,'via:',fileFullPath)
-										return complete()
+										return
 
 									# Fetch the stat for the new file
 									safefs.stat childFileFullPath, (err,childFileStat) =>
 										# Error?
-										if err
-											@emit('error',err)
-											return complete()
+										return  if err
+										# ^ ignore the error as chances are it was a swap file that got deleted
 
 										# Emit the event and note the change
 										@log('debug','determined create:',childFileFullPath,'via:',fileFullPath)
@@ -439,11 +434,7 @@ Watcher = class extends EventEmitter
 											relativePath: childFileRelativePath,
 											stat: childFileStat
 										})
-										createdFiles.push(childFileRelativePath)
-										return complete()
-
-								# Run the tasks
-								tasks.run()
+										return
 
 
 					# If we are a file, lets simply emit the change event

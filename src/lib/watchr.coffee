@@ -207,7 +207,7 @@ Watcher = class extends EventEmitter
 	# Bubbler
 	# Setup a bubble wrapper
 	bubbler: (eventName) =>
-		return (args...) => @bubble(args...)
+		return (args...) => @bubble(eventName, args...)
 
 	###
 	Listen
@@ -359,40 +359,77 @@ Watcher = class extends EventEmitter
 								# Error?
 								return @emit('error',err)  if err
 
+								# Prepare
+								deletedFiles = []
+								createdFiles = []
+								tasks = new TaskGroup().setConfig(concurrency:0).once 'complete', =>
+									[eventName,childFileRelativePath] = args
+									# Check we are from watch method
+									return  unless typeChecker.isString(eventName)
+
+									# Check that we can be trusted (can't trust the other event types)
+									return  unless eventName is 'change'
+
+									# Note
+									@log('debug', 'determined child file change:', childFileRelativePath, 'via:', fileFullPath)
+
+									# Check that we haven't already taken care of the file
+									if childFileRelativePath in deletedFiles or childFileRelativePath in createdFiles
+										@log('debug', 'that had already been taken care of:', childFileRelativePath, 'via:', fileFullPath)
+										return
+
+									# Check that we have a child watch
+									childFileWatcher = @children[childFileRelativePath]
+									unless childFileWatcher
+										@log('debug', 'but had no watchr for the child file:', childFileRelativePath, 'via:', fileFullPath)
+										return
+
+									# Forward the change event onto the child file watcher
+									@log('debug', 'forwarding child file change onto child watcher:', childFileRelativePath, 'via:', fileFullPath)
+									return childFileWatcher.listener('change','.')
+
 								# Check for deleted files
 								# by cycling through our known children
-								eachr @children, (childFileWatcher,childFileRelativePath) =>
+								eachr @children, (childFileWatcher,childFileRelativePath) =>  tasks.addTask (complete) =>
 									# Skip if this is a new file (not a deleted file)
-									return  if childFileRelativePath in newFileRelativePaths
+									return complete()  if childFileRelativePath in newFileRelativePaths
 
 									# Fetch full path
 									childFileFullPath = pathUtil.join(fileFullPath,childFileRelativePath)
 
 									# Skip if ignored file
-									return  if @isIgnoredPath(childFileFullPath)
+									if @isIgnoredPath(childFileFullPath)
+										@log('debug','ignored delete:',childFileFullPath,'via:',fileFullPath)
+										return complete()
 
-									# Emit the event
+									# Emit the event and note the change
 									@log('debug','determined delete:',childFileFullPath,'via:',fileFullPath)
 									@closeChild(childFileRelativePath,'deleted')
+									deletedFiles.push(childFileRelativePath)
+									return complete()
 
 								# Check for new files
-								eachr newFileRelativePaths, (childFileRelativePath) =>
+								eachr newFileRelativePaths, (childFileRelativePath) =>  tasks.addTask (complete) =>
 									# Skip if we are already watching this file
-									return  if @children[childFileRelativePath]?
+									return complete()  if @children[childFileRelativePath]?
 									@children[childFileRelativePath] = false  # reserve this file
 
 									# Fetch full path
 									childFileFullPath = pathUtil.join(fileFullPath,childFileRelativePath)
 
 									# Skip if ignored file
-									return  if @isIgnoredPath(childFileFullPath)
+									if @isIgnoredPath(childFileFullPath)
+										@log('debug','ignored create:',childFileFullPath,'via:',fileFullPath)
+										return complete()
 
 									# Fetch the stat for the new file
 									safefs.stat childFileFullPath, (err,childFileStat) =>
 										# Error?
-										return @emit('error',err)  if err
+										if err
+											@emit('error',err)
+											return complete()
 
-										# Emit the event
+										# Emit the event and note the change
 										@log('debug','determined create:',childFileFullPath,'via:',fileFullPath)
 										@emitSafe('change','create',childFileFullPath,childFileStat,null)
 										@watchChild({
@@ -400,6 +437,11 @@ Watcher = class extends EventEmitter
 											relativePath: childFileRelativePath,
 											stat: childFileStat
 										})
+										createdFiles.push(childFileRelativePath)
+										return complete()
+
+								# Run the tasks
+								tasks.run()
 
 
 					# If we are a file, lets simply emit the change event
@@ -409,19 +451,19 @@ Watcher = class extends EventEmitter
 						@emitSafe('change','update',fileFullPath,currentStat,previousStat)
 
 		# Check if the file still exists
-		safefs.exists fileFullPath, (exists) ->
+		safefs.exists fileFullPath, (exists) =>
 			# Apply
 			fileExists = exists
 
 			# If the file still exists, then update the stat
 			if fileExists
-				safefs.stat fileFullPath, (err,stat) ->
+				safefs.stat fileFullPath, (err,stat) =>
 					# Check
-					return me.emit('error',err)  if err
+					return @emit('error',err)  if err
 
 					# Update
 					currentStat = stat
-					me.stat = currentStat
+					@stat = currentStat
 
 					# Get on with it
 					determineTheChange()

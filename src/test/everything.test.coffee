@@ -2,6 +2,7 @@
 pathUtil = require('path')
 fsUtil = require('fs')
 balUtil = require('bal-util')
+extendr = require('extendr')
 watchr = require(__dirname+'/../lib/watchr')
 assert = require('assert')
 joe = require('joe')
@@ -29,10 +30,7 @@ writetree =
 # =====================================
 # Tests
 
-# -------------------------------------
-# Watchr
-
-joe.suite 'watchr', (suite,test) ->
+runTests = (opts,describe,test) ->
 	# Prepare
 	watcher = null
 
@@ -73,7 +71,7 @@ joe.suite 'watchr', (suite,test) ->
 			done(err)
 
 	test 'start watching', (done) ->
-		watchr.watch(
+		watchr.watch(extendr.extend({
 			path: outPath
 			listener: changeHappened
 			ignorePaths: [pathUtil.join(outPath,'blah')]
@@ -82,7 +80,7 @@ joe.suite 'watchr', (suite,test) ->
 			next: (err,_watcher) ->
 				watcher = _watcher
 				wait batchDelay, -> done(err)
-		)
+		},opts))
 
 	test 'detect write', (done) ->
 		writeFile('a')
@@ -136,6 +134,9 @@ joe.suite 'watchr', (suite,test) ->
 	test 'stop watching', ->
 		watcher.close()
 
-	test 'completed', (done) ->
-		done()
-		process.exit()
+# Run tests for each method
+joe.describe 'watchr', (describe,test) ->
+	describe 'watch', (describe,test) ->
+		runTests({preferredMethods:['watch','watchFile']},describe,test)
+	describe 'watchFile', (describe,test) ->
+		runTests({preferredMethods:['watchFile','watch']},describe,test)

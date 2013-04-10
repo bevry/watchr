@@ -1,5 +1,9 @@
 ## History
 
+- v2.4.1 April 10, 2013
+	- Fixed bubblr events
+	- Fixed swap file detection
+
 - v2.4.0 April 5, 2013
 	- Dependency upgrades
 

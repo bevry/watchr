@@ -114,6 +114,9 @@ Watcher = class extends EventEmitter
 		# any custom ignore patterns that you would also like to ignore along with the common patterns
 		ignoreCustomPatterns: null
 
+		# Follow symlinks, i.e. use stat rather than lstat. (optional, default to `true`)
+		followLinks: true
+
 
 	# Now it's time to construct our watcher
 	# We give it a path, and give it some events to use
@@ -160,6 +163,13 @@ Watcher = class extends EventEmitter
 
 		# Return
 		return ignore
+
+	# File Stat
+	fileStat: (path, callback) =>
+		if @config.followLinks
+			safefs.stat path, callback
+		else
+			safefs.lstat path, callback
 
 	###
 	Setup our Instance
@@ -421,7 +431,7 @@ Watcher = class extends EventEmitter
 										return
 
 									# Fetch the stat for the new file
-									safefs.stat childFileFullPath, (err,childFileStat) =>
+									me.fileStat childFileFullPath, (err,childFileStat) =>
 										# Error?
 										return  if err
 										# ^ ignore the error as chances are it was a swap file that got deleted
@@ -450,7 +460,7 @@ Watcher = class extends EventEmitter
 
 			# If the file still exists, then update the stat
 			if fileExists
-				safefs.stat fileFullPath, (err,stat) =>
+				me.fileStat fileFullPath, (err,stat) =>
 					# Check
 					return @emit('error',err)  if err
 
@@ -709,7 +719,7 @@ Watcher = class extends EventEmitter
 		# Ensure Stat
 		if @stat? is false
 			# Fetch the stat
-			safefs.stat config.path, (err,stat) =>
+			me.fileStat config.path, (err,stat) =>
 				# Error
 				return @emit('error',err)  if err
 

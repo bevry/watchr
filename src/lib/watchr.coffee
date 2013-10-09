@@ -319,6 +319,7 @@ Watcher = class extends EventEmitter
 			- eventName - either 'rename' or 'change'
 				- THIS VALUE IS ALWAYS UNRELIABLE AND CANNOT BE TRUSTED
 			- filename - child path of the file that was triggered
+				- This value can also be unrealiable at times
 	- Both methods
 		- For deleted and changed files, it will fire on the file
 		- For new files, it will fire on the directory
@@ -357,6 +358,9 @@ Watcher = class extends EventEmitter
 			currentStatArgument = args[0]
 			previousStatArgument = args[1]
 
+		###
+		# Don't trust the watch method AT ALL
+		##
 		# Can we trust the original event handlers?
 		# We only trust the change event and if we already know about the file it is reporting
 		# Otherwise chances are something else has changed in the directory than just the file being reported
@@ -367,6 +371,7 @@ Watcher = class extends EventEmitter
 				@log('debug', 'forwarding initial change detection to child:', childFileRelativePath, 'via:', fileFullPath)
 				childFileWatcher.listener('change', '.')
 			)()
+		###
 
 		# Prepare: is the same?
 		isTheSame = =>
@@ -401,14 +406,8 @@ Watcher = class extends EventEmitter
 								# Error?
 								return @emit('error', err)  if err
 
-								# Find changed files if we do not have reliable data that something specific has changed
-								# currently we only consider it unreliable if we are using the watch method and didn't receive a path with the event
-								# on most machines, we will receive a path, and it will be accurate
-								# the watchFile method also tends to be quite accurate
-								# so under this use case, we may get something like ['rename',null] which may mean a swap file was renamed to a file
-								# that we are already aware about so we'll have to check the files we are aware about for changes
-								# if we get something like ['rename','.subl111.tmp'] - we hope that the correct change event already fired
-								if eventNameArgument and filenameArgument is null
+								# The watch method is fast, but not reliable, so let's be extra careful about change events
+								if method is 'watch'
 									eachr @children, (childFileWatcher,childFileRelativePath) =>
 										# Skip if the file has been deleted
 										return  unless childFileRelativePath in newFileRelativePaths

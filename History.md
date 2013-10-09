@@ -1,5 +1,11 @@
 ## History
 
+- v2.4.4 October 10, 2013
+	- Added the ability to turn off following links by setting `followLinks` to `false`
+		- Thanks to [Fredrik Noren](https://github.com/FredrikNoren) for [pull request #47](https://github.com/bevry/watchr/pull/47)
+	- Prefer accuracy over speed
+		- Use the watch method by default, but don't trust it at all, always double check everything
+
 - v2.4.3 April 10, 2013
 	- More work on swap file handling
 

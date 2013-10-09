@@ -124,8 +124,8 @@ Watcher = class extends EventEmitter
 	constructor: (config,next) ->
 		# Initialize our object variables for our instance
 		@children = {}
-		@config = extendr.extend({},@config)
-		@config.preferredMethods = ['watch','watchFile']
+		@config = extendr.extend({}, @config)
+		@config.preferredMethods = ['watch', 'watchFile']
 
 		# If next exists within the configuration, then use that as our next handler, if our next handler isn't already defined
 		# Eitherway delete the next handler from the config if it exists
@@ -145,7 +145,7 @@ Watcher = class extends EventEmitter
 	# Log
 	log: (args...) =>
 		console.log(args...)  if @config.outputLog
-		@emit('log',args...)
+		@emit('log', args...)
 		@
 
 	# Is Ignored Path
@@ -159,7 +159,7 @@ Watcher = class extends EventEmitter
 		})
 
 		# Log
-		@log('debug',"ignore: #{path} #{if ignore then 'yes' else 'no'}")
+		@log('debug', "ignore: #{path} #{if ignore then 'yes' else 'no'}")
 
 		# Return
 		return ignore
@@ -176,7 +176,7 @@ Watcher = class extends EventEmitter
 	###
 	setup: (config) ->
 		# Apply
-		extendr.extend(@config,config)
+		extendr.extend(@config, config)
 
 		# Path
 		@path = @config.path
@@ -237,7 +237,7 @@ Watcher = class extends EventEmitter
 			# Array of change listeners
 			if typeChecker.isArray(listeners)
 				for listener in listeners
-					@listen('change',listener)
+					@listen('change', listener)
 
 			# Object of event listeners
 			else if typeChecker.isPlainObject(listeners)
@@ -245,19 +245,19 @@ Watcher = class extends EventEmitter
 					# Array of event listeners
 					if typeChecker.isArray(listenerArray)
 						for listener in listenerArray
-							@listen(eventName,listener)
+							@listen(eventName, listener)
 					# Single event listener
 					else
-						@listen(eventName,listenerArray)
+						@listen(eventName, listenerArray)
 
 			# Single change listener
 			else
-				@listen('change',listeners)
+				@listen('change', listeners)
 		else
 			# Listen
-			@removeListener(eventName,listener)
-			@on(eventName,listener)
-			@log('debug',"added a listener: on #{@path} for event #{eventName}")
+			@removeListener(eventName, listener)
+			@on(eventName, listener)
+			@log('debug', "added a listener: on #{@path} for event #{eventName}")
 
 		# Chain
 		@
@@ -292,7 +292,7 @@ Watcher = class extends EventEmitter
 			# ^ we use this instead of toString as stringify is recursive
 			# which is needed to detect the size change on the stats
 			if thisEvent in @cachedEvents
-				@log('debug',"event ignored on #{@path} due to duplicate:", args)
+				@log('debug', "event ignored on #{@path} due to duplicate:", args)
 				return @
 			@cachedEvents.push(thisEvent)
 
@@ -336,7 +336,7 @@ Watcher = class extends EventEmitter
 		fileExists = null
 
 		# Log
-		@log('debug',"watch event triggered on #{@path}:", args)
+		@log('debug', "watch event triggered on #{@path}:", args)
 
 		# Can we trust the original event handlers?
 		# We only trust the change event and if we already know about the file it is reporting
@@ -345,7 +345,7 @@ Watcher = class extends EventEmitter
 			return (=>
 				childFileRelativePath = args[1]
 				childFileWatcher = @children[args[1]]
-				@log('debug','forwarding initial change detection to child:',childFileRelativePath,'via:',fileFullPath)
+				@log('debug', 'forwarding initial change detection to child:', childFileRelativePath, 'via:', fileFullPath)
 				childFileWatcher.listener('change','.')
 			)()
 
@@ -360,7 +360,7 @@ Watcher = class extends EventEmitter
 		determineTheChange = =>
 			# If we no longer exist, then we where deleted
 			if !fileExists
-				@log('debug','determined delete:',fileFullPath)
+				@log('debug', 'determined delete:', fileFullPath)
 				@close('deleted')
 
 			# Otherwise, we still do exist
@@ -368,7 +368,7 @@ Watcher = class extends EventEmitter
 				# Let's check for changes
 				if isTheSame()
 					# nothing has changed, so ignore
-					@log('debug',"determined same:",fileFullPath)
+					@log('debug', "determined same:", fileFullPath)
 
 				# Otherwise, something has changed
 				else
@@ -380,7 +380,7 @@ Watcher = class extends EventEmitter
 							# Scan children
 							safefs.readdir fileFullPath, (err,newFileRelativePaths) =>
 								# Error?
-								return @emit('error',err)  if err
+								return @emit('error', err)  if err
 
 								# Find changed files if we do not have reliable data that something specific has changed
 								# currently we only consider it unreliable if we are using the watch method and didn't receive a path with the event
@@ -394,7 +394,7 @@ Watcher = class extends EventEmitter
 										# Skip if the file has been deleted
 										return  unless childFileRelativePath in newFileRelativePaths
 										return  unless childFileWatcher
-										@log('debug','forwarding extensive change detection to child:',childFileRelativePath,'via:',fileFullPath)
+										@log('debug', 'forwarding extensive change detection to child:', childFileRelativePath, 'via:', fileFullPath)
 										childFileWatcher.listener('change','.')
 										return
 
@@ -408,12 +408,12 @@ Watcher = class extends EventEmitter
 
 									# Skip if ignored file
 									if @isIgnoredPath(childFileFullPath)
-										@log('debug','ignored delete:',childFileFullPath,'via:',fileFullPath)
+										@log('debug', 'ignored delete:', childFileFullPath, 'via:', fileFullPath)
 										return
 
 									# Emit the event and note the change
-									@log('debug','determined delete:',childFileFullPath,'via:',fileFullPath)
-									@closeChild(childFileRelativePath,'deleted')
+									@log('debug', 'determined delete:', childFileFullPath, 'via:', fileFullPath)
+									@closeChild(childFileRelativePath, 'deleted')
 									return
 
 								# Find new files
@@ -423,11 +423,11 @@ Watcher = class extends EventEmitter
 									@children[childFileRelativePath] = false  # reserve this file
 
 									# Fetch full path
-									childFileFullPath = pathUtil.join(fileFullPath,childFileRelativePath)
+									childFileFullPath = pathUtil.join(fileFullPath, childFileRelativePath)
 
 									# Skip if ignored file
 									if @isIgnoredPath(childFileFullPath)
-										@log('debug','ignored create:',childFileFullPath,'via:',fileFullPath)
+										@log('debug', 'ignored create:', childFileFullPath, 'via:', fileFullPath)
 										return
 
 									# Fetch the stat for the new file
@@ -437,8 +437,8 @@ Watcher = class extends EventEmitter
 										# ^ ignore the error as chances are it was a swap file that got deleted
 
 										# Emit the event and note the change
-										@log('debug','determined create:',childFileFullPath,'via:',fileFullPath)
-										@emitSafe('change','create',childFileFullPath,childFileStat,null)
+										@log('debug', 'determined create:', childFileFullPath, 'via:', fileFullPath)
+										@emitSafe('change', 'create', childFileFullPath, childFileStat, null)
 										@watchChild({
 											fullPath: childFileFullPath,
 											relativePath: childFileRelativePath,
@@ -450,8 +450,8 @@ Watcher = class extends EventEmitter
 					# If we are a file, lets simply emit the change event
 					else
 						# It has changed, so let's emit a change event
-						@log('debug','determined update:',fileFullPath)
-						@emitSafe('change','update',fileFullPath,currentStat,previousStat)
+						@log('debug', 'determined update:', fileFullPath)
+						@emitSafe('change', 'update', fileFullPath, currentStat, previousStat)
 
 		# Check if the file still exists
 		safefs.exists fileFullPath, (exists) =>
@@ -462,7 +462,7 @@ Watcher = class extends EventEmitter
 			if fileExists
 				me.fileStat fileFullPath, (err,stat) =>
 					# Check
-					return @emit('error',err)  if err
+					return @emit('error', err)  if err
 
 					# Update
 					currentStat = stat
@@ -485,11 +485,11 @@ Watcher = class extends EventEmitter
 	###
 	close: (reason) ->
 		return @  if @state isnt 'active'
-		@log('debug',"close: #{@path}")
+		@log('debug', "close: #{@path}")
 
 		# Close our children
 		for own childRelativePath of @children
-			@closeChild(childRelativePath,reason)
+			@closeChild(childRelativePath, reason)
 
 		# Close watchFile listener
 		if @method is 'watchFile'
@@ -503,10 +503,10 @@ Watcher = class extends EventEmitter
 		# Updated state
 		if reason is 'deleted'
 			@state = 'deleted'
-			@emitSafe('change','delete',@path,null,@stat)
+			@emitSafe('change', 'delete', @path, null, @stat)
 		else if reason is 'failure'
 			@state = 'closed'
-			@log('warn',"Failed to watch the path #{@path}")
+			@log('warn', "Failed to watch the path #{@path}")
 		else
 			@state = 'closed'
 
@@ -551,7 +551,7 @@ Watcher = class extends EventEmitter
 				'change': (args...) ->
 					[changeType,path] = args
 					if changeType is 'delete' and path is opts.fullPath
-						me.closeChild(opts.relativePath,'deleted')
+						me.closeChild(opts.relativePath, 'deleted')
 					me.bubble('change', args...)
 				'error': me.bubbler('error')
 			next: next
@@ -721,7 +721,7 @@ Watcher = class extends EventEmitter
 			# Fetch the stat
 			me.fileStat config.path, (err,stat) =>
 				# Error
-				return @emit('error',err)  if err
+				return @emit('error', err)  if err
 
 				# Apply
 				@stat = stat
@@ -734,13 +734,13 @@ Watcher = class extends EventEmitter
 			return @
 
 		# Handle next callback
-		@listen('watching',next)  if next?
+		@listen('watching', next)  if next?
 
 		# Close our all watch listeners
 		@close()
 
 		# Log
-		@log('debug',"watch: #{@path}")
+		@log('debug', "watch: #{@path}")
 
 		# Prepare
 		complete = (err,result) ->
@@ -751,20 +751,20 @@ Watcher = class extends EventEmitter
 			# Handle
 			if err or !result
 				me.close()
-				me.emit('watching',err,me,false)
+				me.emit('watching', err,  me, false)
 			else
-				me.emit('watching',null,me,true)
+				me.emit('watching', null, me, true)
 
 		# Check if we still exist
 		safefs.exists @path, (exists) ->
 			# Check
-			return complete(null,false)  unless exists
+			return complete(null, false)  unless exists
 
 			# Start watching
 			me.watchSelf (err,watching) ->
-				return complete(err,watching)  if err or !watching
+				return complete(err, watching)  if err or !watching
 				me.watchChildren (err,watching) ->
-					return complete(err,watching)
+					return complete(err, watching)
 
 		# Chain
 		@
@@ -791,7 +791,7 @@ createWatcher = (opts,next) ->
 
 	# Only create a watchr if the path exists
 	unless safefs.existsSync(path)
-		next?(null,null)
+		next?(null, null)
 		return
 
 	# Check if we are already watching that path
@@ -802,13 +802,13 @@ createWatcher = (opts,next) ->
 		watcher.listen(listener)   if listener
 		watcher.listen(listeners)  if listeners
 		# as we don't create a new watcher, we must fire the next callback ourselves
-		next?(null,watcher)
+		next?(null, watcher)
 	else
 		# We don't, so let's create a new one
 		attempt = 0
 		watcher = new Watcher opts, (err) ->
 			# Continue if we passed
-			return next?(err,watcher)  if !err or attempt isnt 0
+			return next?(err, watcher)  if !err or attempt isnt 0
 			++attempt
 
 			# Log
@@ -860,7 +860,7 @@ watch = (opts,next) ->
 				next?(err,result)
 			paths.forEach (path) ->
 				tasks.addTask (complete) ->
-					localOpts = extendr.extend({},opts)
+					localOpts = extendr.extend({}, opts)
 					localOpts.path = path
 					watcher = createWatcher(localOpts,complete)
 					result.push(watcher)  if watcher
@@ -870,11 +870,11 @@ watch = (opts,next) ->
 		else
 			opts.path = paths
 			result.push createWatcher opts, (err) ->
-				next?(err,result)
+				next?(err, result)
 
 	# Single path
 	else
-		result = createWatcher(opts,next)
+		result = createWatcher(opts, next)
 
 	# Return
 	return result

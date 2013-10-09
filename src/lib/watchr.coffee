@@ -566,6 +566,7 @@ Watcher = class extends EventEmitter
 			ignoreHiddenFiles: config.ignoreHiddenFiles
 			ignoreCommonPatterns: config.ignoreCommonPatterns
 			ignoreCustomPatterns: config.ignoreCustomPatterns
+			followLinks: config.followLinks
 		)
 
 		# Return

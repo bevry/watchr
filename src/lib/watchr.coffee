@@ -144,7 +144,7 @@ Watcher = class extends EventEmitter
 
 	# Log
 	log: (args...) =>
-		console.log(args...)  if @config.outputLog
+		console.log(args...)  if @config.outputLog is true
 		@emit('log', args...)
 		@
 
@@ -307,18 +307,23 @@ Watcher = class extends EventEmitter
 	A change event has fired
 
 	Things to note:
-	- watchFile:
-		- currentStat still exists even for deleted/renamed files
-		- for deleted and updated files, it will fire on the file
-		- for created files, it will fire on the directory
-	- fsWatcher:
-		- eventName is either 'change' or 'rename', this value cannot be trusted
-		- currentStat still exists even for deleted/renamed files
-		- previousStat is accurate, however we already have this
-		- for deleted and changed files, it will fire on the file
-		- for new files, it will fire on the directory
+	- watchFile method
+		- Arguments
+			- currentStat - the updated stat of the changed file
+				- Exists even for deleted/renamed files
+			- previousStat - the last old stat of the changed file
+				- Is accurate, however we already have this
+		- For renamed files, it will will fire on the directory and the file
+	- watch method
+		- Arguments
+			- eventName - either 'rename' or 'change'
+				- THIS VALUE IS ALWAYS UNRELIABLE AND CANNOT BE TRUSTED
+			- filename - child path of the file that was triggered
+	- Both methods
+		- For deleted and changed files, it will fire on the file
+		- For new files, it will fire on the directory
 
-	Arguments for our change listener will be:
+	Output arguments for your emitted event will be:
 	- for updated files the arguments will be: `'update', fullPath, currentStat, previousStat`
 	- for created files the arguments will be: `'create', fullPath, currentStat, null`
 	- for deleted files the arguments will be: `'delete', fullPath, null, previousStat`
@@ -338,15 +343,29 @@ Watcher = class extends EventEmitter
 		# Log
 		@log('debug', "watch event triggered on #{@path}:", args)
 
+		# Determine the arguments
+		method = null
+		eventNameArgument = null
+		currentStatArgument  = null
+		previousStatArgument = null
+		filenameArgument = null
+		if typeChecker.isString(args[0])
+			method = 'watch'
+			eventNameArgument = args[0]
+			filenameArgument = args[1]
+		else
+			currentStatArgument = args[0]
+			previousStatArgument = args[1]
+
 		# Can we trust the original event handlers?
 		# We only trust the change event and if we already know about the file it is reporting
 		# Otherwise chances are something else has changed in the directory than just the file being reported
-		if args[0] is 'change' and @children[args[1]]
+		if eventNameArgument is 'change' and @children[filenameArgument]
 			return (=>
-				childFileRelativePath = args[1]
-				childFileWatcher = @children[args[1]]
+				childFileRelativePath = filenameArgument
+				childFileWatcher = @children[filenameArgument]
 				@log('debug', 'forwarding initial change detection to child:', childFileRelativePath, 'via:', fileFullPath)
-				childFileWatcher.listener('change','.')
+				childFileWatcher.listener('change', '.')
 			)()
 
 		# Prepare: is the same?
@@ -389,13 +408,13 @@ Watcher = class extends EventEmitter
 								# so under this use case, we may get something like ['rename',null] which may mean a swap file was renamed to a file
 								# that we are already aware about so we'll have to check the files we are aware about for changes
 								# if we get something like ['rename','.subl111.tmp'] - we hope that the correct change event already fired
-								if typeChecker.isString(args[0]) and args[1] is null
+								if eventNameArgument and filenameArgument is null
 									eachr @children, (childFileWatcher,childFileRelativePath) =>
 										# Skip if the file has been deleted
 										return  unless childFileRelativePath in newFileRelativePaths
 										return  unless childFileWatcher
 										@log('debug', 'forwarding extensive change detection to child:', childFileRelativePath, 'via:', fileFullPath)
-										childFileWatcher.listener('change','.')
+										childFileWatcher.listener('change', '.')
 										return
 
 								# Find deleted files

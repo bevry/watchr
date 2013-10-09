@@ -34,7 +34,7 @@
 		"typechecker": "~2.0.1",
 		"extendr": "~2.0.1",
 		"eachr": "~2.0.2",
-		"safefs": "~3.0.1",
+		"safefs": "~3.1.0",
 		"taskgroup": "~3.1.1"
 	},
 	"devDependencies": {

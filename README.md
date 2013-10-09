@@ -28,6 +28,7 @@ You install it via `npm install watchr` and use it via `require('watchr').watch(
 - `ignoreHiddenFiles` (optional, defaults to `false`) whether or not to ignored files which filename starts with a `.`
 - `ignoreCommonPatterns` (optional, defaults to `true`) whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
 - `ignoreCustomPatterns` (optional, defaults to `null`) any custom ignore patterns that you would also like to ignore along with the common patterns
+- `followLinks` (optional, defaults to `true`) follow symlinks, i.e. use stat rather than lstat
 
 The following events are available to your via the listeners:
 

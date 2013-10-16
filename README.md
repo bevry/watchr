@@ -6,7 +6,7 @@
 
 Watchr provides a normalised API the file watching APIs of different node versions, nested/recursive file and directory watching, and accurate detailed events for file/directory creations, updates, and deletions.
 
-Watchr is made to be a module that other tools include. If you are looking for a command line tool to perform actions when files are changed, check out [Watchy](https://github.com/caseywebdev/watchy) which uses Watchr :)
+Watchr is made to be a module that other tools include. If you are looking for a command line tool to perform actions when files are changed, check out [Watchy](https://github.com/caseywebdev/watchy).
 
 You install it via `npm install watchr` and use it via `require('watchr').watch(config)`. Available configuration options are:
 

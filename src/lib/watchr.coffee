@@ -478,12 +478,12 @@ Watcher = class extends EventEmitter
 						return
 
 					# Emit the event and note the change
-					watchr.log('debug', "Determined create: #{childFileFullPath} via: #{watchr.path}")
 					addTask (complete) ->
-						childFileWatcher = watchr.watchChild(
+						watchr.log('debug', "Determined create: #{childFileFullPath} via: #{watchr.path}")
+						watchr.watchChild(
 							fullPath: childFileFullPath,
 							relativePath: childFileRelativePath,
-							next: (err) ->
+							next: (err, childFileWatcher) ->
 								console.log 'asd'
 								return complete(err)  if err
 								watchr.emit('change', 'create', childFileFullPath, childFileWatcher.stat, null)
@@ -572,36 +572,42 @@ Watcher = class extends EventEmitter
 		# Prepare
 		watchr = @
 		config = @config
+		[opts, next] = extractOpts(opts, next)
 
-		# Watch the file if we aren't already
-		watchr.children[opts.relativePath] or= watch(
-			# Custom
-			path: opts.fullPath
-			stat: opts.stat
-			listeners:
-				'log': watchr.bubbler('log')
-				'change': (args...) ->
-					[changeType, path] = args
-					if changeType is 'delete' and path is opts.fullPath
-						watchr.closeChild(opts.relativePath, 'deleted')
-					watchr.bubble('change', args...)
-				'error': watchr.bubbler('error')
-			next: next
+		# Check if we are already watching
+		if watchr.children[opts.relativePath]
+			# Provide the existing watcher
+			next?(null, watchr.children[opts.relativePath])
+		else
+			# Create a new watcher for the child
+			watchr.children[opts.relativePath] = watch(
+				# Custom
+				path: opts.fullPath
+				stat: opts.stat
+				listeners:
+					'log': watchr.bubbler('log')
+					'change': (args...) ->
+						[changeType, path] = args
+						if changeType is 'delete' and path is opts.fullPath
+							watchr.closeChild(opts.relativePath, 'deleted')
+						watchr.bubble('change', args...)
+					'error': watchr.bubbler('error')
+				next: next
 
-			# Inherit
-			outputLog: config.outputLog
-			interval: config.interval
-			persistent: config.persistent
-			catchupDelay: config.catchupDelay
-			preferredMethods: config.preferredMethods
-			ignorePaths: config.ignorePaths
-			ignoreHiddenFiles: config.ignoreHiddenFiles
-			ignoreCommonPatterns: config.ignoreCommonPatterns
-			ignoreCustomPatterns: config.ignoreCustomPatterns
-			followLinks: config.followLinks
-		)
+				# Inherit
+				outputLog: config.outputLog
+				interval: config.interval
+				persistent: config.persistent
+				catchupDelay: config.catchupDelay
+				preferredMethods: config.preferredMethods
+				ignorePaths: config.ignorePaths
+				ignoreHiddenFiles: config.ignoreHiddenFiles
+				ignoreCommonPatterns: config.ignoreCommonPatterns
+				ignoreCustomPatterns: config.ignoreCustomPatterns
+				followLinks: config.followLinks
+			)
 
-		# Return
+		# Return the watchr
 		return watchr.children[opts.relativePath]
 
 	###

@@ -89,11 +89,17 @@ Watcher = class extends EventEmitter
 		# only appliable to the `watchFile` watching method
 		persistent: true
 
+		# Catchup Delay (optional, defaults to `1000`)
+		# Because of swap files, the original file may be deleted, and then over-written with by moving a swap file in it's place
+		# Without a catchup delay, we would report the original file's deletion, and ignore the swap file changes
+		# With a catchup delay, we would wait until there is a pause in events, then scan for the correct changes
+		catchupDelay: 1*1000
+
 		# Duplicate Delay (optional, defaults to `1000`)
 		# sometimes events will fire really fast, this delay is set in place to ensure we don't fire the same event
 		# within the duplicateDelay timespan
 		# Setting to falsey will perform no duplicate detection
-		duplicateDelay: 1*1000
+		duplicateDelay: 5*1000
 
 		# Preferred Methods (optional, defaults to `['watch','watchFile']`)
 		# In which order should use the watch methods when watching the file
@@ -289,11 +295,18 @@ Watcher = class extends EventEmitter
 			@cachedEvents ?= []
 
 			# Check duplicate
-			thisEvent = JSON.stringify(args)
+			thisEvent = JSON.parse JSON.stringify(args)
+			delete thisEvent[3].atime  if thisEvent[3]?.atime?
+			delete thisEvent[3].ctime  if thisEvent[3]?.ctime?
+			delete thisEvent[4].atime  if thisEvent[4]?.atime?
+			delete thisEvent[4].ctime  if thisEvent[4]?.ctime?
+			thisEvent = JSON.stringify(thisEvent, null, '  ')
+
 			# ^ we use this instead of toString as stringify is recursive
 			# which is needed to detect the size change on the stats
-			if thisEvent in @cachedEvents
-				@log('debug', "event ignored on #{@path} due to duplicate:", args)
+			#console.log('===\n', thisEvent, '\n---\n', @cachedEvents, '\n===')
+			for cachedEvent in @cachedEvents
+				@log('debug', "event ignored on #{@path} due to duplicate:", thisEvent)
 				return @
 			@cachedEvents.push(thisEvent)
 
@@ -334,55 +347,81 @@ Watcher = class extends EventEmitter
 	- for renamed files: 'rename', fullPath, currentStat, previousStat, newFullPath
 	- rename is possible as the stat.ino is the same for the delete and create
 	###
-	listener: (args...) =>
+	listenerCatchUpTimeout: null
+	listenerSafe: (args...) =>
 		# Prepare
 		me = @
-		fileFullPath = @path
-		currentStat = null
-		previousStat = @stat
-		fileExists = null
+		config = @config
 
 		# Log
 		@log('debug', "watch event triggered on #{@path}:", args)
 
-		# Determine the arguments
-		method = null
-		eventNameArgument = null
-		currentStatArgument  = null
-		previousStatArgument = null
-		filenameArgument = null
-		if typeChecker.isString(args[0])
-			method = 'watch'
-			eventNameArgument = args[0]
-			filenameArgument = args[1]
+		# Listener delay
+		if config.catchupDelay
+			# Clear duplicate timeout
+			clearTimeout(@listenerCatchUpTimeout)  if @listenerCatchUpTimeout?
+			@listenerCatchUpTimeout = setTimeout(
+				-> me.listener.apply(me, args); true
+				config.catchupDelay
+			)
 		else
-			currentStatArgument = args[0]
-			previousStatArgument = args[1]
+			me.listener.apply(me, args)
 
-		###
-		# Don't trust the watch method AT ALL
-		##
-		# Can we trust the original event handlers?
-		# We only trust the change event and if we already know about the file it is reporting
-		# Otherwise chances are something else has changed in the directory than just the file being reported
-		if eventNameArgument is 'change' and @children[filenameArgument]
-			return (=>
-				childFileRelativePath = filenameArgument
-				childFileWatcher = @children[filenameArgument]
-				@log('debug', 'forwarding initial change detection to child:', childFileRelativePath, 'via:', fileFullPath)
-				childFileWatcher.listener('change', '.')
-			)()
-		###
+		# Chain
+		@
+
+	listener: (args...) =>
+		# Prepare
+		me = @
+
+		# Prepare properties
+		currentStat = null
+		fileExists = null
+		fileFullPath = @path
+		previousStat = @stat
+
+		# Prepare arguments
+		method = if typeChecker.isString(args[0]) then 'watch' else 'watchFile'
+		# don't trust the other arguments
+
+		# Log
+		@log('debug', "watch event followed through on #{@path}:", args)
 
 		# Prepare: is the same?
-		isTheSame = =>
+		isTheSame = ->
 			if currentStat? and previousStat?
 				if currentStat.size is previousStat.size and currentStat.mtime.toString() is previousStat.mtime.toString()
 					return true
 			return false
 
+		# Start the detection process
+		startDetection = =>
+			# Check if the file still exists
+			safefs.exists fileFullPath, (exists) =>
+				# Apply local gobal property
+				fileExists = exists
+
+				# If the file still exists, then update the stat
+				if fileExists
+					me.fileStat fileFullPath, (err,stat) =>
+						# Check
+						return @emit('error', err)  if err
+
+						# Update
+						currentStat = stat
+						@stat = currentStat
+
+						# Get on with it
+						determineFileChange()
+				else
+					# Get on with it
+					determineFileChange()
+
+			# Done
+			return true
+
 		# Prepare: determine the change
-		determineTheChange = =>
+		determineFileChange = =>
 			# If we no longer exist, then we where deleted
 			if !fileExists
 				@log('debug', 'determined delete:', fileFullPath)
@@ -414,7 +453,7 @@ Watcher = class extends EventEmitter
 										return  unless childFileRelativePath in newFileRelativePaths
 										return  unless childFileWatcher
 										@log('debug', 'forwarding extensive change detection to child:', childFileRelativePath, 'via:', fileFullPath)
-										childFileWatcher.listener('change', '.')
+										childFileWatcher.listenerSafe('change', '.')
 										return
 
 								# Find deleted files
@@ -472,26 +511,8 @@ Watcher = class extends EventEmitter
 						@log('debug', 'determined update:', fileFullPath)
 						@emitSafe('change', 'update', fileFullPath, currentStat, previousStat)
 
-		# Check if the file still exists
-		safefs.exists fileFullPath, (exists) =>
-			# Apply
-			fileExists = exists
-
-			# If the file still exists, then update the stat
-			if fileExists
-				me.fileStat fileFullPath, (err,stat) =>
-					# Check
-					return @emit('error', err)  if err
-
-					# Update
-					currentStat = stat
-					@stat = currentStat
-
-					# Get on with it
-					determineTheChange()
-			else
-				# Get on with it
-				determineTheChange()
+		# Start detection
+		startDetection()
 
 		# Chain
 		@
@@ -655,8 +676,8 @@ Watcher = class extends EventEmitter
 
 				# Watch
 				try
-					me.fswatcher = fsUtil.watch(me.path, me.listener)
-					# must pass the listener here instead of via me.fswatcher.on('change', me.listener)
+					me.fswatcher = fsUtil.watch(me.path, me.listenerSafe)
+					# must pass the listener here instead of via me.fswatcher.on('change', listener)
 					# as the latter is not supported on node 0.6 (only 0.8+)
 				catch err
 					return next(err,false)
@@ -678,7 +699,7 @@ Watcher = class extends EventEmitter
 
 				# Watch
 				try
-					fsUtil.watchFile(me.path, watchFileOpts, me.listener)
+					fsUtil.watchFile(me.path, watchFileOpts, me.listenerSafe)
 				catch err
 					return next(err,false)
 

@@ -1,8 +1,15 @@
-# Watchr &mdash; better file system watching for Node.js
+# Watchr — better file system watching for Node.js
 
-[![Build Status](https://secure.travis-ci.org/bevry/watchr.png?branch=master)](http://travis-ci.org/bevry/watchr)
-[![NPM version](https://badge.fury.io/js/watchr.png)](https://npmjs.org/package/watchr)
-[![Flattr this project](https://raw.github.com/balupton/flattr-buttons/master/badge-89x18.gif)](http://flattr.com/thing/344188/balupton-on-Flattr)
+<!-- BADGES/ -->
+
+[![Build Status](http://img.shields.io/travis-ci/bevry/watchr.png?branch=master)](http://travis-ci.org/bevry/watchr "Check this project's build status on TravisCI")
+[![NPM version](http://badge.fury.io/js/watchr.png)](https://npmjs.org/package/watchr "View this project on NPM")
+[![Gittip donate button](http://img.shields.io/gittip/bevry.png)](https://www.gittip.com/bevry/ "Donate weekly to this project using Gittip")
+[![Flattr donate button](http://img.shields.io/flattr/donate.png?color=yellow)](http://flattr.com/thing/344188/balupton-on-Flattr "Donate monthly to this project using Flattr")
+[![PayPayl donate button](http://img.shields.io/paypal/donate.png?color=yellow)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=QB8GQPZAH84N6 "Donate once-off to this project using Paypal")
+
+<!-- /BADGES -->
+
 
 Watchr provides a normalised API the file watching APIs of different node versions, nested/recursive file and directory watching, and accurate detailed events for file/directory creations, updates, and deletions.
 
@@ -115,18 +122,65 @@ watchr
 	- We're working on it. No known workaround.
 
 
-
-## Support
-Support can be found in the [GitHub Issue Tracker](https://github.com/bevry/watchr/issues)
-
-
+<!-- HISTORY/ -->
 
 ## History
-You can discover the history inside the [History.md](https://github.com/bevry/watchr/blob/master/History.md#files) file
+[Discover the change history by heading on over to the `HISTORY.md` file.](https://github.com/bevry/watchr/blob/master/HISTORY.md#files)
+
+<!-- /HISTORY -->
 
 
+<!-- CONTRIBUTE/ -->
+
+## Contribute
+
+[Discover how you can contribute by heading on over to the `CONTRIBUTING.md` file.](https://github.com/bevry/watchr/blob/master/CONTRIBUTING.md#files)
+
+<!-- /CONTRIBUTE -->
+
+
+<!-- BACKERS/ -->
+
+## Backers
+
+### Maintainers
+
+These amazing people are maintaining this project:
+
+- Benjamin Lupton <b@lupton.cc> (http://balupton.com)
+
+### Sponsors
+
+No sponsors yet! Will you be the first?
+
+[![Gittip donate button](http://img.shields.io/gittip/bevry.png)](https://www.gittip.com/bevry/ "Donate weekly to this project using Gittip")
+[![Flattr donate button](http://img.shields.io/flattr/donate.png?color=yellow)](http://flattr.com/thing/344188/balupton-on-Flattr "Donate monthly to this project using Flattr")
+[![PayPayl donate button](http://img.shields.io/paypal/donate.png?color=yellow)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=QB8GQPZAH84N6 "Donate once-off to this project using Paypal")
+
+### Contributors
+
+These amazing people have contributed code to this project:
+
+- [adamsanderson](https://github.com/adamsanderson) — [view contributions](https://github.com/bevry/watchr/commits?author=adamsanderson)
+- [balupton](https://github.com/balupton) — [view contributions](https://github.com/bevry/watchr/commits?author=balupton)
+- [Casey Foster](https://github.com/caseywebdev) — [view contributions](https://github.com/bevry/watchr/commits?author=caseywebdev)
+- [FredrikNoren](https://github.com/FredrikNoren) — [view contributions](https://github.com/bevry/watchr/commits?author=FredrikNoren)
+- [Robson Roberto Souza Peixoto](https://github.com/robsonpeixoto) <robsonpeixoto@gmail.com> — [view contributions](https://github.com/bevry/watchr/commits?author=robsonpeixoto)
+
+[Become a contributor!](https://github.com/bevry/watchr/blob/master/CONTRIBUTING.md#files)
+
+<!-- /BACKERS -->
+
+
+<!-- LICENSE/ -->
 
 ## License
-Licensed under the incredibly [permissive](http://en.wikipedia.org/wiki/Permissive_free_software_licence) [MIT License](http://creativecommons.org/licenses/MIT/)
-<br/>Copyright &copy; 2012+ [Bevry Pty Ltd](http://bevry.me)
-<br/>Copyright &copy; 2011 [Benjamin Lupton](http://balupton.com)
+
+Licensed under the incredibly [permissive](http://en.wikipedia.org/wiki/Permissive_free_software_licence) [MIT license](http://creativecommons.org/licenses/MIT/)
+
+Copyright &copy; 2012+ Bevry Pty Ltd <us@bevry.me> (http://bevry.me)
+<br/>Copyright &copy; 2011 Benjamin Lupton <b@lupton.cc> (http://balupton.com)
+
+<!-- /LICENSE -->
+
+

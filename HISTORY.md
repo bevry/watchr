@@ -1,4 +1,10 @@
-## History
+# History
+
+- v2.4.6 December 18, 2013
+	- Updated dependencies
+
+- v2.4.5 November 17, 2013
+	- Updated dependencies
 
 - v2.4.4 October 10, 2013
 	- Added the ability to turn off following links by setting `followLinks` to `false`
@@ -18,10 +24,10 @@
 	- Fixed swap file detection
 
 - v2.4.0 April 5, 2013
-	- Dependency upgrades
+	- Updated dependencies
 
 - v2.3.10 April 1, 2013
-	- Dependency upgrades
+	- Updated dependencies
 
 - v2.3.9 March 17, 2013
 	- Made it so if `duplicateDelay` is falsey we will not do a duplicate check
@@ -90,7 +96,6 @@
 - v2.2.1 December 16, 2012
 	- Fixed sub directory scans ignoring our ignore patterns
 	- Updated dependencies
-		-  [bal-util](https://github.com/balupton/bal-util) from 1.15.x to ~1.15.2
 
 - v2.2.0 December 15, 2012
 	- We now ignore common ignore patterns by default

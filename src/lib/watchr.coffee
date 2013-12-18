@@ -9,6 +9,7 @@ fsUtil = require('fs')
 # Require our helper modules
 balUtil = require('bal-util')
 safefs = require('safefs')
+ignorefs = require('ignorefs')
 extendr = require('extendr')
 eachr = require('eachr')
 typeChecker = require('typechecker')
@@ -151,7 +152,7 @@ Watcher = class extends EventEmitter
 	# Is Ignored Path
 	isIgnoredPath: (path,opts={}) =>
 		# Ignore?
-		ignore = balUtil.isIgnoredPath(path,{
+		ignore = ignorefs.isIgnoredPath(path,{
 			ignorePaths: opts.ignorePaths ? @config.ignorePaths
 			ignoreHiddenFiles: opts.ignoreHiddenFiles ? @config.ignoreHiddenFiles
 			ignoreCommonPatterns: opts.ignoreCommonPatterns ? @config.ignoreCommonPatterns

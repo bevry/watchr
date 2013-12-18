@@ -15,7 +15,7 @@ wait = (delay,fn) -> setTimeout(fn,delay)
 
 # Test Data
 debug = process.env.TRAVIS_NODE_VERSION?
-batchDelay = 6*1000
+batchDelay = 10*1000
 outPath = pathUtil.join(__dirname,'../../test/out')
 writetree =
 	'a': 'a content'

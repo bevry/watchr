@@ -95,12 +95,14 @@ watchrUtil =
 			# Try second
 			methodTwo opts, (errTwo, success, method) ->
 				# Move on if succeeded
-				return complete(null, success, method)  if success
+				return next(null, success, method)  if success
 				# Otherwise...
 
 				# Log errors and fail
 				errCombined = new Error("Both watch methods failed on #{opts.path}:\n#{errOne.stack.toString()}\n#{errTwo.stack.toString()}")
-				return complete(errCombined)
+				return next(errCombined, false, null)
 
 		# Chain
 		return @
+
+module.exports = watchrUtil

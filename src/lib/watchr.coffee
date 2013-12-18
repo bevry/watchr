@@ -206,7 +206,7 @@ Watcher = class extends EventEmitter
 
 	# Get the latest stat object
 	# next(err, stat)
-	getStat: (path, next) =>
+	getStat: (next) =>
 		# Prepare
 		watchr = @
 		config = @config
@@ -215,7 +215,7 @@ Watcher = class extends EventEmitter
 		method = if config.followLinks then 'stat' else 'lstat'
 
 		# Fetch
-		fsUtil[method](path, next)
+		fsUtil[method](watchr.path, next)
 
 		# Chain
 		return @
@@ -666,12 +666,12 @@ Watcher = class extends EventEmitter
 		watchr.method = null
 
 		# Try the watch
-		watchrUtil.watchMethod(
+		watchrUtil.watchMethods(
 			path: watchr.path
 			methods: config.preferredMethods
 			persistent: config.persistent
 			interval: config.interval
-			listener: watchr.listenerSafe
+			listener: watchr.listener
 			next: (err, success, method) =>
 				# Check
 				watchr.emit('error', err)  if err

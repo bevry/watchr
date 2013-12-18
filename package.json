@@ -48,7 +48,8 @@
     "eachr": "~2.0.2",
     "safefs": "~3.0.5",
     "taskgroup": "~3.3.1",
-    "ignorefs": "~1.0.0"
+    "ignorefs": "~1.0.0",
+    "extract-opts": "~2.2.0"
   },
   "devDependencies": {
     "coffee-script": "~1.6.2",

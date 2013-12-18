@@ -2,18 +2,16 @@
 # This provides us with what we need to interact with file paths
 pathUtil = require('path')
 
-# Require the node.js fs module
-# This provides us with what we need to interact with the file system
-fsUtil = require('fs')
-
 # Require our helper modules
 balUtil = require('bal-util')
-safefs = require('safefs')
+fsUtil = require('safefs')
 ignorefs = require('ignorefs')
 extendr = require('extendr')
 eachr = require('eachr')
+{extractOpts} = require('extract-opts')
 typeChecker = require('typechecker')
 {TaskGroup} = require('taskgroup')
+watchrUtil = require('./watchr-util')
 
 # Require the node.js event emitter
 # This provides us with the event system that we use for binding and trigger events
@@ -35,9 +33,6 @@ watchers = {}
 Watcher = class extends EventEmitter
 	# The path this class instance is attached to
 	path: null
-
-	# Is it a directory or not?
-	isDirectory: null
 
 	# Our stat object, it contains things like change times, size, and is it a directory
 	stat: null
@@ -105,6 +100,9 @@ Watcher = class extends EventEmitter
 		# In which order should use the watch methods when watching the file
 		preferredMethods: null
 
+		# Follow symlinks, i.e. use stat rather than lstat. (optional, default to `true`)
+		followLinks: true
+
 		# Ignore Paths (optional, defaults to `false`)
 		# array of paths that we should ignore
 		ignorePaths: false
@@ -121,69 +119,32 @@ Watcher = class extends EventEmitter
 		# any custom ignore patterns that you would also like to ignore along with the common patterns
 		ignoreCustomPatterns: null
 
-		# Follow symlinks, i.e. use stat rather than lstat. (optional, default to `true`)
-		followLinks: true
-
 
 	# Now it's time to construct our watcher
 	# We give it a path, and give it some events to use
 	# Then we get to work with watching it
-	constructor: (config,next) ->
+	constructor: (opts,next) ->
 		# Initialize our object variables for our instance
 		@children = {}
 		@config = extendr.extend({}, @config)
 		@config.preferredMethods = ['watch', 'watchFile']
 
-		# If next exists within the configuration, then use that as our next handler, if our next handler isn't already defined
-		# Eitherway delete the next handler from the config if it exists
-		if config.next?
-			next ?= config.next
-			delete config.next
+		# Extract options
+		[opts, next] = extractOpts(opts, next)
 
 		# Setup our instance with the configuration
-		@setup(config)  if config
+		@setConfig(opts)  if opts
 
 		# Start the watch setup
-		@watch(next)    if next
+		@watch(next)  if next
 
 		# Chain
 		@
 
-	# Log
-	log: (args...) =>
-		console.log(args...)  if @config.outputLog is true
-		@emit('log', args...)
-		@
-
-	# Is Ignored Path
-	isIgnoredPath: (path,opts={}) =>
-		# Ignore?
-		ignore = ignorefs.isIgnoredPath(path,{
-			ignorePaths: opts.ignorePaths ? @config.ignorePaths
-			ignoreHiddenFiles: opts.ignoreHiddenFiles ? @config.ignoreHiddenFiles
-			ignoreCommonPatterns: opts.ignoreCommonPatterns ? @config.ignoreCommonPatterns
-			ignoreCustomPatterns: opts.ignoreCustomPatterns ? @config.ignoreCustomPatterns
-		})
-
-		# Log
-		@log('debug', "ignore: #{path} #{if ignore then 'yes' else 'no'}")
-
-		# Return
-		return ignore
-
-	# File Stat
-	fileStat: (path, callback) =>
-		if @config.followLinks
-			safefs.stat path, callback
-		else
-			safefs.lstat path, callback
-
-	###
-	Setup our Instance
-	###
-	setup: (config) ->
+	# Set our configuration
+	setConfig: (opts) ->
 		# Apply
-		extendr.extend(@config, config)
+		extendr.extend(@config, opts)
 
 		# Path
 		@path = @config.path
@@ -207,16 +168,86 @@ Watcher = class extends EventEmitter
 		# Chain
 		@
 
+	# Log
+	log: (args...) =>
+		# Prepare
+		watchr = @
+		config = @config
+
+		# Output the log?
+		console.log(args...)  if config.outputLog is true
+
+		# Emit the log
+		watchr.emit('log', args...)
+
+		# Chain
+		@
+
+	# Get Ignored Options
+	getIgnoredOptions: (opts={}) ->
+		# Prepare
+		config = @config
+
+		# Return the ignore options
+		return {
+			ignorePaths: opts.ignorePaths ? config.ignorePaths
+			ignoreHiddenFiles: opts.ignoreHiddenFiles ? config.ignoreHiddenFiles
+			ignoreCommonPatterns: opts.ignoreCommonPatterns ? config.ignoreCommonPatterns
+			ignoreCustomPatterns: opts.ignoreCustomPatterns ? config.ignoreCustomPatterns
+		}
+
+	# Is Ignored Path
+	isIgnoredPath: (path,opts) =>
+		# Prepare
+		watchr = @
+
+		# Ignore?
+		ignore = ignorefs.isIgnoredPath(path, watchr.getIgnoredOptions(opts))
+
+		# Log
+		watchr.log('debug', "ignore: #{path} #{if ignore then 'yes' else 'no'}")
+
+		# Return
+		return ignore
+
+	# Get the latest stat object
+	# next(err, stat)
+	getStat: (path, next) =>
+		# Prepare
+		watchr = @
+		config = @config
+
+		# Figure out what stat method we want to use
+		method = if config.followLinks then 'stat' else 'lstat'
+
+		# Fetch
+		fsUtil[method](path, next)
+
+		# Chain
+		return @
+
+	# Is Directory
+	isDirectory: ->
+		# Prepare
+		watchr = @
+
+		# Return is directory
+		return watchr.stat.isDirectory()
+
+
 	# Before we start watching, we'll have to setup the functions our watcher will need
 
 	# Bubble
 	# We need something to bubble events up from a child file all the way up the top
 	bubble: (args...) =>
+		# Prepare
+		watchr = @
+
 		# Log
-		#@log('debug',"bubble on #{@path} with the args:",args)
+		#watchr.log('debug',"bubble on #{@path} with the args:",args)
 
 		# Trigger
-		@emit(args...)
+		watchr.emit(args...)
 
 		# Chain
 		@
@@ -224,7 +255,11 @@ Watcher = class extends EventEmitter
 	# Bubbler
 	# Setup a bubble wrapper
 	bubbler: (eventName) =>
-		return (args...) => @bubble(eventName, args...)
+		# Prepare
+		watchr = @
+
+		# Return bubbler
+		return (args...) -> watchr.bubble(eventName, args...)
 
 	###
 	Listen
@@ -236,6 +271,9 @@ Watcher = class extends EventEmitter
 	- `{eventName:[eventListener]}` an object keyed with the event names and valued with an array of event listeners
 	###
 	listen: (eventName,listener) ->
+		# Prepare
+		watchr = @
+
 		# Check format
 		unless listener?
 			# Alias
@@ -244,7 +282,7 @@ Watcher = class extends EventEmitter
 			# Array of change listeners
 			if typeChecker.isArray(listeners)
 				for listener in listeners
-					@listen('change', listener)
+					watchr.listen('change', listener)
 
 			# Object of event listeners
 			else if typeChecker.isPlainObject(listeners)
@@ -252,19 +290,19 @@ Watcher = class extends EventEmitter
 					# Array of event listeners
 					if typeChecker.isArray(listenerArray)
 						for listener in listenerArray
-							@listen(eventName, listener)
+							watchr.listen(eventName, listener)
 					# Single event listener
 					else
-						@listen(eventName, listenerArray)
+						watchr.listen(eventName, listenerArray)
 
 			# Single change listener
 			else
-				@listen('change', listeners)
+				watchr.listen('change', listeners)
 		else
 			# Listen
-			@removeListener(eventName, listener)
-			@on(eventName, listener)
-			@log('debug', "added a listener: on #{@path} for event #{eventName}")
+			watchr.removeListener(eventName, listener)
+			watchr.on(eventName, listener)
+			watchr.log('debug', "added a listener: on #{watchr.path} for event #{eventName}")
 
 		# Chain
 		@
@@ -274,25 +312,24 @@ Watcher = class extends EventEmitter
 	Sometimes events can fire incredibly quickly in which case we'll determine multiple events
 	This alias for emit('change',...) will check to see if the event has already been fired recently
 	and if it has, then ignore it
-	###
 	cacheTimeout: null
 	cachedEvents: null
 	emitSafe: (args...) ->
 		# Prepare
-		me = @
+		watchr = @
 		config = @config
 
 		# Duplicate detection?
 		if config.duplicateDelay
 			# Clear duplicate timeout
-			clearTimeout(@cacheTimeout)  if @cacheTimeout?
-			@cacheTimeout = setTimeout(
+			clearTimeout(watchr.cacheTimeout)  if watchr.cacheTimeout?
+			watchr.cacheTimeout = setTimeout(
 				->
-					me.cachedEvents = []
-					me.cacheTimeout = null
+					watchr.cachedEvents = []
+					watchr.cacheTimeout = null
 				config.duplicateDelay
 			)
-			@cachedEvents ?= []
+			watchr.cachedEvents ?= []
 
 			# Check duplicate
 			thisEvent = JSON.parse JSON.stringify(args)
@@ -305,16 +342,17 @@ Watcher = class extends EventEmitter
 			# ^ we use this instead of toString as stringify is recursive
 			# which is needed to detect the size change on the stats
 			#console.log('===\n', thisEvent, '\n---\n', @cachedEvents, '\n===')
-			for cachedEvent in @cachedEvents
-				@log('debug', "event ignored on #{@path} due to duplicate:", thisEvent)
+			for cachedEvent in watchr.cachedEvents
+				watchr.log('debug', "event ignored on #{watchr.path} due to duplicate:", thisEvent)
 				return @
-			@cachedEvents.push(thisEvent)
+			watchr.cachedEvents.push(thisEvent)
 
 		# Fire the event
-		@emit(args...)
+		watchr.emit(args...)
 
 		# Chain
 		@
+	###
 
 	###
 	Listener
@@ -347,172 +385,175 @@ Watcher = class extends EventEmitter
 	- for renamed files: 'rename', fullPath, currentStat, previousStat, newFullPath
 	- rename is possible as the stat.ino is the same for the delete and create
 	###
-	listenerCatchUpTimeout: null
-	listenerSafe: (args...) =>
+	listenersExecuting: 0
+	listener: (opts, next) =>
 		# Prepare
-		me = @
+		watchr = @
 		config = @config
-
-		# Log
-		@log('debug', "watch event triggered on #{@path}:", args)
-
-		# Listener delay
-		if config.catchupDelay
-			# Clear duplicate timeout
-			clearTimeout(@listenerCatchUpTimeout)  if @listenerCatchUpTimeout?
-			@listenerCatchUpTimeout = setTimeout(
-				-> me.listener.apply(me, args); true
-				config.catchupDelay
-			)
-		else
-			me.listener.apply(me, args)
-
-		# Chain
-		@
-
-	listener: (args...) =>
-		# Prepare
-		me = @
+		[opts, next] = extractOpts(opts, next)
 
 		# Prepare properties
 		currentStat = null
 		fileExists = null
-		fileFullPath = @path
-		previousStat = @stat
+		previousStat = watchr.stat
 
 		# Prepare arguments
 		method = if typeChecker.isString(args[0]) then 'watch' else 'watchFile'
 		# don't trust the other arguments
 
 		# Log
-		@log('debug', "watch event followed through on #{@path}:", args)
-
-		# Prepare: is the same?
-		isTheSame = ->
-			if currentStat? and previousStat?
-				if currentStat.size is previousStat.size and currentStat.mtime.toString() is previousStat.mtime.toString()
-					return true
-			return false
+		watchr.log('debug', "Watch triggered on: #{watchr.path}", args)
 
 		# Start the detection process
-		startDetection = =>
+		tasks = new TaskGroup().once 'complete', (err) ->
+			watchr.listenersExecuting -= 1
+			watchr.emit('error', err)
+			return next?(err)
+
+		# Ensure that we give swap files a chance to die
+		tasks.addTask (complete) ->
+			# Check if we care for this
+			watchr.listenersExecuting += 1
+			return complete()  unless config.catchupDelay
+			tryAgain = ->
+				setTimeout(
+					->
+						if watchr.listenersExecuting is 1
+							complete()
+						else
+							tryAgain()
+					config.catchupDelay
+				)
+
+		# Check if the file still exists
+		tasks.addTask (complete) ->
+			# Log
+			watchr.log('debug', "Watch followed through on: #{watchr.path}", args)
+
 			# Check if the file still exists
-			safefs.exists fileFullPath, (exists) =>
+			fsUtil.exists watchr.path, (exists) ->
 				# Apply local gobal property
 				fileExists = exists
 
 				# If the file still exists, then update the stat
-				if fileExists
-					me.fileStat fileFullPath, (err,stat) =>
-						# Check
-						return @emit('error', err)  if err
+				if fileExists is false
+					# Log
+					watchr.log('debug', "Determined delete: #{watchr.path}")
 
-						# Update
-						currentStat = stat
-						@stat = currentStat
+					# Apply
+					watchr.stat = null
+					watchr.close('deleted')
 
-						# Get on with it
-						determineFileChange()
-				else
+					# Exit
+					return tasks.exit()
+
+				# Update the stat of the file
+				watchr.getStat (err, stat) =>
+					# Check
+					return watchr.emit('error', err)  if err
+
+					# Update
+					watchr.stat = currentStat = stat
+
 					# Get on with it
-					determineFileChange()
+					return complete()
 
-			# Done
-			return true
+		# Check if the file has changed
+		tasks.addTask (complete) ->
+			if watchrUtil.statChanged(previousStat, currentStat)
+				# nothing has changed, so ignore
+				watchr.log('debug', "Determined same: #{watchr.path}")
 
-		# Prepare: determine the change
-		determineFileChange = =>
-			# If we no longer exist, then we where deleted
-			if !fileExists
-				@log('debug', 'determined delete:', fileFullPath)
-				@close('deleted')
+				# Exit
+				return tasks.exit()
 
-			# Otherwise, we still do exist
-			else
-				# Let's check for changes
-				if isTheSame()
-					# nothing has changed, so ignore
-					@log('debug', "determined same:", fileFullPath)
+			# Complete
+			return complete()
 
-				# Otherwise, something has changed
-				else
-					# So let's check if we are a directory
-					# as if we are a directory the chances are something actually happened to a child (rename or delete)
-					# and if we are the same, then we should scan our children to look for renames and deletes
-					if @isDirectory
-						if isTheSame() is false
-							# Scan children
-							safefs.readdir fileFullPath, (err,newFileRelativePaths) =>
-								# Error?
-								return @emit('error', err)  if err
+		# Check what has changed
+		tasks.addGroup (addGroup, addTask, complete) ->
+			# Set this sub group to execute in parallel
+			@setConfig(concurrency: 0)
 
-								# The watch method is fast, but not reliable, so let's be extra careful about change events
-								if method is 'watch'
-									eachr @children, (childFileWatcher,childFileRelativePath) =>
-										# Skip if the file has been deleted
-										return  unless childFileRelativePath in newFileRelativePaths
-										return  unless childFileWatcher
-										@log('debug', 'forwarding extensive change detection to child:', childFileRelativePath, 'via:', fileFullPath)
-										childFileWatcher.listenerSafe('change', '.')
-										return
+			# So let's check if we are a directory
+			if watchr.isDirectory() is false
+				# If we are a file, lets simply emit the change event
+				watchr.log('debug', "Determined update: #{watchr.path}")
+				watchr.emit('change', 'update', watchr.path, currentStat, previousStat)
+				return complete()
 
-								# Find deleted files
-								eachr @children, (childFileWatcher,childFileRelativePath) =>
-									# Skip if the file still exists
-									return  if childFileRelativePath in newFileRelativePaths
+			# We are a direcotry
+			# Chances are something actually happened to a child (rename or delete)
+			# and if we are the same, then we should scan our children to look for renames and deletes
+			fsUtil.readdir watchr.path, (err,newFileRelativePaths) ->
+				# Error?
+				return complete(err)  if err
 
-									# Fetch full path
-									childFileFullPath = pathUtil.join(fileFullPath,childFileRelativePath)
+				# The watch method is fast, but not reliable, so let's be extra careful about change events
+				if method is 'watch'
+					eachr watchr.children, (childFileWatcher,childFileRelativePath) ->
+						# Skip if the file has been deleted
+						return  unless childFileRelativePath in newFileRelativePaths
+						return  unless childFileWatcher
+						tasks.addTask (complete) ->
+							watchr.log('debug', "Forwarding extensive change detection to child: #{childFileRelativePath} via: #{watchr.path}")
+							childFileWatcher.listener(null, complete)
+						return
 
-									# Skip if ignored file
-									if @isIgnoredPath(childFileFullPath)
-										@log('debug', 'ignored delete:', childFileFullPath, 'via:', fileFullPath)
-										return
+				# Find deleted files
+				eachr watchr.children, (childFileWatcher,childFileRelativePath) =>
+					# Skip if the file still exists
+					return  if childFileRelativePath in newFileRelativePaths
 
-									# Emit the event and note the change
-									@log('debug', 'determined delete:', childFileFullPath, 'via:', fileFullPath)
-									@closeChild(childFileRelativePath, 'deleted')
-									return
+					# Fetch full path
+					childFileFullPath = pathUtil.join(watchr.path, childFileRelativePath)
 
-								# Find new files
-								eachr newFileRelativePaths, (childFileRelativePath) =>
-									# Skip if we are already watching this file
-									return  if @children[childFileRelativePath]?
-									@children[childFileRelativePath] = false  # reserve this file
+					# Skip if ignored file
+					if watchr.isIgnoredPath(childFileFullPath)
+						watchr.log('debug', "Ignored delete: #{childFileFullPath} via: #{watchr.path}")
+						return
 
-									# Fetch full path
-									childFileFullPath = pathUtil.join(fileFullPath, childFileRelativePath)
+					# Emit the event and note the change
+					watchr.log('debug', "Determined delete: #{childFileFullPath} via: #{watchr.path}")
+					watchr.closeChild(childFileRelativePath, 'deleted')
+					return
 
-									# Skip if ignored file
-									if @isIgnoredPath(childFileFullPath)
-										@log('debug', 'ignored create:', childFileFullPath, 'via:', fileFullPath)
-										return
+				# Find new files
+				eachr newFileRelativePaths, (childFileRelativePath) =>
+					# Skip if we are already watching this file
+					return  if watchr.children[childFileRelativePath]?
+					watchr.children[childFileRelativePath] = false  # reserve this file
 
-									# Fetch the stat for the new file
-									me.fileStat childFileFullPath, (err,childFileStat) =>
-										# Error?
-										return  if err
-										# ^ ignore the error as chances are it was a swap file that got deleted
+					# Fetch full path
+					childFileFullPath = pathUtil.join(watchr.path, childFileRelativePath)
 
-										# Emit the event and note the change
-										@log('debug', 'determined create:', childFileFullPath, 'via:', fileFullPath)
-										@emitSafe('change', 'create', childFileFullPath, childFileStat, null)
-										@watchChild({
-											fullPath: childFileFullPath,
-											relativePath: childFileRelativePath,
-											stat: childFileStat
-										})
-										return
+					# Skip if ignored file
+					if watchr.isIgnoredPath(childFileFullPath)
+						watchr.log('debug', "Ignored create: #{childFileFullPath} via: #{watchr.path}")
+						return
 
+					# Fetch the stat for the new file
+					me.fileStat childFileFullPath, (err,childFileStat) ->
+						# Error?
+						return  if err
+						# ^ ignore the error as chances are it was a swap file that got deleted
 
-					# If we are a file, lets simply emit the change event
-					else
-						# It has changed, so let's emit a change event
-						@log('debug', 'determined update:', fileFullPath)
-						@emitSafe('change', 'update', fileFullPath, currentStat, previousStat)
+						# Emit the event and note the change
+						watchr.log('debug', "Determined create: #{childFileFullPath} via: #{watchr.path}")
+						watchr.emit('change', 'create', childFileFullPath, childFileStat, null)
+						addTask (complete) -> watchr.watchChild({
+							fullPath: childFileFullPath,
+							relativePath: childFileRelativePath,
+							stat: childFileStat
+							next: complete
+						})
+						return
+
+				# Read the directory, finished adding tasks to the group
+				return complete()
 
 		# Start detection
-		startDetection()
+		tasks.run()
 
 		# Chain
 		@
@@ -524,35 +565,41 @@ Watcher = class extends EventEmitter
 	Essentially it is a self-destruct
 	###
 	close: (reason) ->
-		return @  if @state isnt 'active'
-		@log('debug', "close: #{@path}")
+		# Prepare
+		watchr = @
+
+		# Nothing to do? Already closed?
+		return @  if watchr.state isnt 'active'
+
+		# Close
+		watchr.log('debug', "close: #{watchr.path}")
 
 		# Close our children
-		for own childRelativePath of @children
-			@closeChild(childRelativePath, reason)
+		for own childRelativePath of watchr.children
+			watchr.closeChild(childRelativePath, reason)
 
 		# Close watchFile listener
-		if @method is 'watchFile'
-			fsUtil.unwatchFile(@path)
+		if watchr.method is 'watchFile'
+			fsUtil.unwatchFile(watchr.path)
 
 		# Close watch listener
-		if @fswatcher?
-			@fswatcher.close()
-			@fswatcher = null
+		if watchr.fswatcher?
+			watchr.fswatcher.close()
+			watchr.fswatcher = null
 
 		# Updated state
 		if reason is 'deleted'
-			@state = 'deleted'
-			@emitSafe('change', 'delete', @path, null, @stat)
+			watchr.state = 'deleted'
+			watchr.emit('change', 'delete', watchr.path, null, watchr.stat)
 		else if reason is 'failure'
-			@state = 'closed'
-			@log('warn', "Failed to watch the path #{@path}")
+			watchr.state = 'closed'
+			watchr.log('warn', "Failed to watch the path #{watchr.path}")
 		else
-			@state = 'closed'
+			watchr.state = 'closed'
 
 		# Delete our watchers reference
-		if watchers[@path]?
-			delete watchers[@path]
+		if watchers[watchr.path]?
+			delete watchers[watchr.path]
 			watchersTotal--
 
 		# Chain
@@ -560,11 +607,14 @@ Watcher = class extends EventEmitter
 
 	# Close a child
 	closeChild: (fileRelativePath,reason) ->
+		# Prepare
+		watchr = @
+
 		# Check
-		if @children[fileRelativePath]?
-			watcher = @children[fileRelativePath]
+		if watchr.children[fileRelativePath]?
+			watcher = watchr.children[fileRelativePath]
 			watcher.close(reason)  if watcher  # could be "fase" for reservation
-			delete @children[fileRelativePath]
+			delete watchr.children[fileRelativePath]
 
 		# Chain
 		@
@@ -574,26 +624,26 @@ Watcher = class extends EventEmitter
 	Setup watching for a child
 	Bubble events of the child into our instance
 	Also instantiate the child with our instance's configuration where applicable
-	next(err,watcher)
+	next(err, watchr)
 	###
-	watchChild: (opts,next) ->
+	watchChild: (opts, next) ->
 		# Prepare
-		me = @
+		watchr = @
 		config = @config
 
 		# Watch the file if we aren't already
-		me.children[opts.relativePath] or= watch(
+		watchr.children[opts.relativePath] or= watch(
 			# Custom
 			path: opts.fullPath
 			stat: opts.stat
 			listeners:
-				'log': me.bubbler('log')
+				'log': watchr.bubbler('log')
 				'change': (args...) ->
-					[changeType,path] = args
+					[changeType, path] = args
 					if changeType is 'delete' and path is opts.fullPath
-						me.closeChild(opts.relativePath, 'deleted')
-					me.bubble('change', args...)
-				'error': me.bubbler('error')
+						watchr.closeChild(opts.relativePath, 'deleted')
+					watchr.bubble('change', args...)
+				'error': watchr.bubbler('error')
 			next: next
 
 			# Inherit
@@ -610,22 +660,22 @@ Watcher = class extends EventEmitter
 		)
 
 		# Return
-		return me.children[opts.relativePath]
+		return watchr.children[opts.relativePath]
 
 	###
 	Watch Children
-	next(err,watching)
+	next(err, watching)
 	###
 	watchChildren: (next) ->
 		# Prepare
-		me = @
+		watchr = @
 		config = @config
 
 		# Cycle through the directory if necessary
-		if @isDirectory
+		if watchr.isDirectory()
 			balUtil.scandir(
 				# Path
-				path: @path
+				path: watchr.path
 
 				# Options
 				ignorePaths: config.ignorePaths
@@ -637,110 +687,63 @@ Watcher = class extends EventEmitter
 				# Next
 				next: (err) ->
 					watching = !err
-					return next(err,watching)
+					return next(err, watching)
 
 				# File and Directory Actions
-				action: (fullPath,relativePath,nextFile,stat) ->
+				action: (fullPath,relativePath,nextFile) ->
 					# Check we are still releveant
-					if me.state isnt 'active'
-						return nextFile(null,true)  # skip without error
+					if watchr.state isnt 'active'
+						return nextFile(null, true)  # skip without error
 
 					# Watch this child
-					me.watchChild {fullPath,relativePath,stat}, (err,watcher) ->
-						nextFile(err)
+					watchr.watchChild {fullPath, relativePath}, (err,watcher) ->
+						return nextFile(err)
 			)
+
 		else
-			next(null,true)
+			next(null, true)
 
 		# Chain
-		return @
+		@
 
 	###
 	Watch Self
+	next(err, watching)
 	###
 	watchSelf: (next) ->
 		# Prepare
-		me = @
+		watchr = @
 		config = @config
 
 		# Reset the method
-		@method = null
+		watchr.method = null
 
-		# Setup our watch methods
-		methods =
-			# Try with fsUtil.watch
-			# next(err,watching)
-			watch: (next) ->
+		# Try the watch
+		watchrUtil.watchMethod(
+			path: watchr.path
+			methods: config.preferredMethods
+			persistent: config.persistent
+			interval: config.interval
+			listener: watchr.listenerSafe
+			next: (err, success, method) =>
 				# Check
-				return next(null,false)  unless fsUtil.watch?
+				watchr.emit('error', err)  if err
 
-				# Watch
-				try
-					me.fswatcher = fsUtil.watch(me.path, me.listenerSafe)
-					# must pass the listener here instead of via me.fswatcher.on('change', listener)
-					# as the latter is not supported on node 0.6 (only 0.8+)
-				catch err
-					return next(err,false)
+				# Error?
+				if !success
+					watchr.close('failure')
+					return next(null, false)
 
 				# Apply
-				me.method = 'watch'
-				return next(null,true)
+				watchr.method = method
+				watchr.state = 'active'
 
-			# Try fsUtil.watchFile
-			# next(err,watching)
-			watchFile: (next) ->
-				# Check
-				return next(null,false)  unless fsUtil.watchFile?
-
-				# Options
-				watchFileOpts =
-					persistent: config.persistent
-					interval: config.interval
-
-				# Watch
-				try
-					fsUtil.watchFile(me.path, watchFileOpts, me.listenerSafe)
-				catch err
-					return next(err,false)
-
-				# Apply
-				me.method = 'watchFile'
-				return next(null,true)
-
-		# Complete
-		complete = (watching) ->
-			# Error?
-			if !watching
-				me.close('failure')
-				return next(null,false)
-
-			# Success
-			me.state = 'active'
-			return next(null,true)
-
-		# Preferences
-		methodOne = me.config.preferredMethods[0]
-		methodTwo = me.config.preferredMethods[1]
-
-		# Try first
-		methods[methodOne] (err1,watching) ->
-			# Move on if succeeded
-			return complete(watching)  if watching
-			# Otherwise...
-
-			# Try second
-			methods[methodTwo] (err2,watching) ->
-				# Move on if succeeded
-				return complete(watching)  if watching
-				# Otherwise...
-
-				# Log errors and fail
-				me.emit('error',err1)  if err1
-				me.emit('error',err2)  if err2
-				return complete(false)
+				# Forward
+				return next(null, true)
+		)
 
 		# Chain
-		return @
+		@
 
 	###
 	Watch
@@ -750,62 +753,59 @@ Watcher = class extends EventEmitter
 	If we are a directory, let's recurse
 	If we are deleted, then don't error but return the isWatching argument of our completion callback as false
 	Once watching has completed for this directory and all children, then emit the watching event
-	next(err,watcherInstance,success)
+	next(err, watchr, watching)
 	###
 	watch: (next) ->
 		# Prepare
-		me = @
+		watchr = @
 		config = @config
 
+		# Prepare
+		complete = (err, watching) ->
+			# Prepare
+			err ?= null
+			watching ?= true
+
+			# Failure
+			if err or !watching
+				watchr.close()
+				next?(err, watchr, false)
+				watchr.emit('watching', err,  watchr, false)
+
+			# Success
+			else
+				next?(null, watchr, true)
+				watchr.emit('watching', null, watchr, true)
+
 		# Ensure Stat
-		if @stat? is false
+		if watchr.stat? is false
 			# Fetch the stat
-			me.fileStat config.path, (err,stat) =>
+			watchr.getStat (err, stat) =>
 				# Error
-				return @emit('error', err)  if err
+				return complete(err, false)  if err or !stat
 
 				# Apply
-				@stat = stat
-				@isDirectory = stat.isDirectory()
+				watchr.stat = stat
 
 				# Recurse
-				return @watch(next)
+				return watchr.watch(next)
 
 			# Chain
 			return @
 
-		# Handle next callback
-		@listen('watching', next)  if next?
-
 		# Close our all watch listeners
-		@close()
+		watchr.close()
 
 		# Log
-		@log('debug', "watch: #{@path}")
+		watchr.log('debug', "watch: #{@path}")
 
-		# Prepare
-		complete = (err,result) ->
-			# Prepare
-			err ?= null
-			result ?= true
+		# Watch ourself
+		watchr.watchSelf (err, watching) =>
+			return complete(err, watching)  if err or !watching
 
-			# Handle
-			if err or !result
-				me.close()
-				me.emit('watching', err,  me, false)
-			else
-				me.emit('watching', null, me, true)
-
-		# Check if we still exist
-		safefs.exists @path, (exists) ->
-			# Check
-			return complete(null, false)  unless exists
-
-			# Start watching
-			me.watchSelf (err,watching) ->
-				return complete(err, watching)  if err or !watching
-				me.watchChildren (err,watching) ->
-					return complete(err, watching)
+			# Watch the childrne
+			watchr.watchChildren (err, watching) =>
+				return complete(err, watching)
 
 		# Chain
 		@
@@ -818,32 +818,30 @@ If it does exist, then lets check our cache for an already existing watcher inst
 If we have an already existing watching instance, then just add our listeners to that
 If we don't, then create a watching instance
 Fire the next callback once done
+opts = {path, listener, listeners}
 next(err,watcherInstance)
 ###
 createWatcher = (opts,next) ->
 	# Prepare
-	{path,listener,listeners} = opts
-
-	# If next exists within the configuration, then use that as our next handler, if our next handler isn't already defined
-	# Eitherway delete the next handler from the config if it exists
-	if opts.next?
-		next ?= opts.next
-		delete opts.next
+	[opts, next] = extractOpts(opts, next)
 
 	# Only create a watchr if the path exists
-	unless safefs.existsSync(path)
+	unless fsUtil.existsSync(opts.path)
 		next?(null, null)
 		return
 
 	# Check if we are already watching that path
-	if watchers[path]?
+	if watchers[opts.path]?
 		# We do, so let's use that one instead
-		watcher = watchers[path]
+		watcher = watchers[opts.path]
+
 		# and add the new listeners if we have any
-		watcher.listen(listener)   if listener
-		watcher.listen(listeners)  if listeners
+		watcher.listen(opts.listener)   if opts.listener
+		watcher.listen(opts.listeners)  if opts.listeners
+
 		# as we don't create a new watcher, we must fire the next callback ourselves
 		next?(null, watcher)
+
 	else
 		# We don't, so let's create a new one
 		attempt = 0
@@ -857,13 +855,13 @@ createWatcher = (opts,next) ->
 
 			# Otherwise try again with the other preferred method
 			watcher
-				.setup(
+				.setConfig(
 					preferredMethods: watcher.config.preferredMethods.reverse()
 				)
 				.watch()
 
 		# Save the watcher
-		watchers[path] = watcher
+		watchers[opts.path] = watcher
 		++watchersTotal
 
 	# Return
@@ -880,13 +878,10 @@ next(err,results)
 ###
 watch = (opts,next) ->
 	# Prepare
-	result = []
+	[opts, next] = extractOpts(opts, next)
 
-	# If next exists within the configuration, then use that as our next handler, if our next handler isn't already defined
-	# Eitherway delete the next handler from the config if it exists
-	if opts.next?
-		next ?= opts.next
-		delete opts.next
+	# Prepare
+	result = []
 
 	# Check paths as that is handled by us
 	if opts.paths
@@ -920,7 +915,9 @@ watch = (opts,next) ->
 	# Return
 	return result
 
-
 # Now let's provide node.js with our public API
 # In other words, what the application that calls us has access to
-module.exports = {watch,Watcher}
+module.exports = {
+	watch: watch
+	Watcher: Watcher
+}

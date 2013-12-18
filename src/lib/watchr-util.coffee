@@ -1,4 +1,5 @@
 # Import
+extendr = require('extendr')
 {extractOpts} = require('extract-opts')
 fsUtil = require('safefs')
 

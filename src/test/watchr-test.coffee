@@ -80,7 +80,8 @@ runTests = (opts,describe,test) ->
 			next: (err,_watcher) ->
 				watcher = _watcher
 				wait batchDelay, -> done(err)
-		},opts))
+		},opts)).on 'error', (err) ->
+			console.log err.stack
 
 	test 'detect write', (done) ->
 		writeFile('a')

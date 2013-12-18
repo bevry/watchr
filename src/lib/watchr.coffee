@@ -344,12 +344,8 @@ Watcher = class extends EventEmitter
 		fileExists = null
 		previousStat = watchr.stat
 
-		# Prepare arguments
-		method = if typeChecker.isString(args[0]) then 'watch' else 'watchFile'
-		# don't trust the other arguments
-
 		# Log
-		watchr.log('debug', "Watch triggered on: #{watchr.path}", args)
+		watchr.log('debug', "Watch triggered on: #{watchr.path}")
 
 		# Start the detection process
 		tasks = new TaskGroup().once 'complete', (err) ->
@@ -371,11 +367,12 @@ Watcher = class extends EventEmitter
 							tryAgain()
 					config.catchupDelay
 				)
+			tryAgain()
 
 		# Check if the file still exists
 		tasks.addTask (complete) ->
 			# Log
-			watchr.log('debug', "Watch followed through on: #{watchr.path}", args)
+			watchr.log('debug', "Watch followed through on: #{watchr.path}")
 
 			# Check if the file still exists
 			fsUtil.exists watchr.path, (exists) ->
@@ -395,7 +392,7 @@ Watcher = class extends EventEmitter
 					return tasks.exit()
 
 				# Update the stat of the file
-				watchr.getStat (err, stat) =>
+				watchr.getStat (err, stat) ->
 					# Check
 					return watchr.emit('error', err)  if err
 
@@ -407,9 +404,10 @@ Watcher = class extends EventEmitter
 
 		# Check if the file has changed
 		tasks.addTask (complete) ->
-			if watchrUtil.statChanged(previousStat, currentStat)
+			# Check if it is the same
+			if watchrUtil.statChanged(previousStat, currentStat) is false
 				# nothing has changed, so ignore
-				watchr.log('debug', "Determined same: #{watchr.path}")
+				watchr.log('debug', "Determined same: #{watchr.path}", previousStat, currentStat)
 
 				# Exit
 				return tasks.exit()
@@ -437,7 +435,7 @@ Watcher = class extends EventEmitter
 				return complete(err)  if err
 
 				# The watch method is fast, but not reliable, so let's be extra careful about change events
-				if method is 'watch'
+				if watchr.method is 'watch'
 					eachr watchr.children, (childFileWatcher,childFileRelativePath) ->
 						# Skip if the file has been deleted
 						return  unless childFileRelativePath in newFileRelativePaths
@@ -448,7 +446,7 @@ Watcher = class extends EventEmitter
 						return
 
 				# Find deleted files
-				eachr watchr.children, (childFileWatcher,childFileRelativePath) =>
+				eachr watchr.children, (childFileWatcher,childFileRelativePath) ->
 					# Skip if the file still exists
 					return  if childFileRelativePath in newFileRelativePaths
 
@@ -466,7 +464,7 @@ Watcher = class extends EventEmitter
 					return
 
 				# Find new files
-				eachr newFileRelativePaths, (childFileRelativePath) =>
+				eachr newFileRelativePaths, (childFileRelativePath) ->
 					# Skip if we are already watching this file
 					return  if watchr.children[childFileRelativePath]?
 					watchr.children[childFileRelativePath] = false  # reserve this file
@@ -671,8 +669,8 @@ Watcher = class extends EventEmitter
 			methods: config.preferredMethods
 			persistent: config.persistent
 			interval: config.interval
-			listener: watchr.listener
-			next: (err, success, method) =>
+			listener: -> watchr.listener()
+			next: (err, success, method) ->
 				# Check
 				watchr.emit('error', err)  if err
 
@@ -727,7 +725,7 @@ Watcher = class extends EventEmitter
 		# Ensure Stat
 		if watchr.stat? is false
 			# Fetch the stat
-			watchr.getStat (err, stat) =>
+			watchr.getStat (err, stat) ->
 				# Error
 				return complete(err, false)  if err or !stat
 
@@ -747,11 +745,11 @@ Watcher = class extends EventEmitter
 		watchr.log('debug', "watch: #{@path}")
 
 		# Watch ourself
-		watchr.watchSelf (err, watching) =>
+		watchr.watchSelf (err, watching) ->
 			return complete(err, watching)  if err or !watching
 
 			# Watch the childrne
-			watchr.watchChildren (err, watching) =>
+			watchr.watchChildren (err, watching) ->
 				return complete(err, watching)
 
 		# Chain

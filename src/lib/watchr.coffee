@@ -90,12 +90,6 @@ Watcher = class extends EventEmitter
 		# With a catchup delay, we would wait until there is a pause in events, then scan for the correct changes
 		catchupDelay: 1*1000
 
-		# Duplicate Delay (optional, defaults to `1000`)
-		# sometimes events will fire really fast, this delay is set in place to ensure we don't fire the same event
-		# within the duplicateDelay timespan
-		# Setting to falsey will perform no duplicate detection
-		duplicateDelay: 5*1000
-
 		# Preferred Methods (optional, defaults to `['watch','watchFile']`)
 		# In which order should use the watch methods when watching the file
 		preferredMethods: null
@@ -306,53 +300,6 @@ Watcher = class extends EventEmitter
 
 		# Chain
 		@
-
-	###
-	Emit Safe
-	Sometimes events can fire incredibly quickly in which case we'll determine multiple events
-	This alias for emit('change',...) will check to see if the event has already been fired recently
-	and if it has, then ignore it
-	cacheTimeout: null
-	cachedEvents: null
-	emitSafe: (args...) ->
-		# Prepare
-		watchr = @
-		config = @config
-
-		# Duplicate detection?
-		if config.duplicateDelay
-			# Clear duplicate timeout
-			clearTimeout(watchr.cacheTimeout)  if watchr.cacheTimeout?
-			watchr.cacheTimeout = setTimeout(
-				->
-					watchr.cachedEvents = []
-					watchr.cacheTimeout = null
-				config.duplicateDelay
-			)
-			watchr.cachedEvents ?= []
-
-			# Check duplicate
-			thisEvent = JSON.parse JSON.stringify(args)
-			delete thisEvent[3].atime  if thisEvent[3]?.atime?
-			delete thisEvent[3].ctime  if thisEvent[3]?.ctime?
-			delete thisEvent[4].atime  if thisEvent[4]?.atime?
-			delete thisEvent[4].ctime  if thisEvent[4]?.ctime?
-			thisEvent = JSON.stringify(thisEvent, null, '  ')
-
-			# ^ we use this instead of toString as stringify is recursive
-			# which is needed to detect the size change on the stats
-			#console.log('===\n', thisEvent, '\n---\n', @cachedEvents, '\n===')
-			for cachedEvent in watchr.cachedEvents
-				watchr.log('debug', "event ignored on #{watchr.path} due to duplicate:", thisEvent)
-				return @
-			watchr.cachedEvents.push(thisEvent)
-
-		# Fire the event
-		watchr.emit(args...)
-
-		# Chain
-		@
-	###
 
 	###
 	Listener
@@ -650,7 +597,7 @@ Watcher = class extends EventEmitter
 			outputLog: config.outputLog
 			interval: config.interval
 			persistent: config.persistent
-			duplicateDelay: config.duplicateDelay
+			catchupDelay: config.catchupDelay
 			preferredMethods: config.preferredMethods
 			ignorePaths: config.ignorePaths
 			ignoreHiddenFiles: config.ignoreHiddenFiles

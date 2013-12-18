@@ -477,22 +477,19 @@ Watcher = class extends EventEmitter
 						watchr.log('debug', "Ignored create: #{childFileFullPath} via: #{watchr.path}")
 						return
 
-					# Fetch the stat for the new file
-					me.fileStat childFileFullPath, (err,childFileStat) ->
-						# Error?
-						return  if err
-						# ^ ignore the error as chances are it was a swap file that got deleted
-
-						# Emit the event and note the change
-						watchr.log('debug', "Determined create: #{childFileFullPath} via: #{watchr.path}")
-						watchr.emit('change', 'create', childFileFullPath, childFileStat, null)
-						addTask (complete) -> watchr.watchChild({
+					# Emit the event and note the change
+					watchr.log('debug', "Determined create: #{childFileFullPath} via: #{watchr.path}")
+					addTask (complete) ->
+						childFileWatcher = watchr.watchChild(
 							fullPath: childFileFullPath,
 							relativePath: childFileRelativePath,
-							stat: childFileStat
-							next: complete
-						})
-						return
+							next: (err) ->
+								console.log 'asd'
+								return complete(err)  if err
+								watchr.emit('change', 'create', childFileFullPath, childFileWatcher.stat, null)
+								return complete()
+						)
+					return
 
 				# Read the directory, finished adding tasks to the group
 				return complete()

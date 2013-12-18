@@ -48,17 +48,17 @@ runTests = (opts,describe,test) ->
 
 	# Files changes
 	writeFile = (fileRelativePath) ->
-		fileFullPath = pathUtil.join(outPath,fileRelativePath)
+		fileFullPath = pathUtil.join(outPath, fileRelativePath)
 		fsUtil.writeFileSync(fileFullPath, "#{fileRelativePath} now has the random number #{Math.random()}")
 	deleteFile = (fileRelativePath) ->
-		fileFullPath = pathUtil.join(outPath,fileRelativePath)
+		fileFullPath = pathUtil.join(outPath, fileRelativePath)
 		fsUtil.unlinkSync(fileFullPath)
 	makeDir = (fileRelativePath) ->
-		fileFullPath = pathUtil.join(outPath,fileRelativePath)
+		fileFullPath = pathUtil.join(outPath, fileRelativePath)
 		fsUtil.mkdirSync(fileFullPath,'700')
 	renameFile = (fileRelativePath1,fileRelativePath2) ->
-		fileFullPath1 = pathUtil.join(outPath,fileRelativePath1)
-		fileFullPath2 = pathUtil.join(outPath,fileRelativePath2)
+		fileFullPath1 = pathUtil.join(outPath, fileRelativePath1)
+		fileFullPath2 = pathUtil.join(outPath, fileRelativePath2)
 		fsUtil.renameSync(fileFullPath1,fileFullPath2)
 
 	# Tests
@@ -81,56 +81,56 @@ runTests = (opts,describe,test) ->
 				watcher = _watcher
 				wait batchDelay, -> done(err)
 		},opts)).on 'error', (err) ->
-			console.log err.stack
+			console.log err, err?.stack
 
 	test 'detect write', (done) ->
 		writeFile('a')
 		writeFile('b/b-a')
-		checkChanges(2,done)
+		checkChanges(2, done)
 
 	test 'detect write ignored on hidden files', (done) ->
 		writeFile('.c/c-a')
-		checkChanges(0,done)
+		checkChanges(0, done)
 
 	test 'detect write ignored on ignored files', (done) ->
 		writeFile('blah')
-		checkChanges(0,done)
+		checkChanges(0, done)
 
 	test 'detect delete', (done) ->
 		deleteFile('b/b-b')
-		checkChanges(1,done)
+		checkChanges(1, done)
 
 	test 'detect delete ignored on hidden files', (done) ->
 		deleteFile('.c/c-a')
-		checkChanges(0,done)
+		checkChanges(0, done)
 
 	test 'detect delete ignored on ignored files', (done) ->
 		deleteFile('blah')
-		checkChanges(0,done)
+		checkChanges(0, done)
 
 	test 'detect mkdir', (done) ->
 		makeDir('someNewDir1')
-		checkChanges(1,done)
+		checkChanges(1, done)
 
 	test 'detect mkdir and write', (done) ->
 		writeFile('someNewfile1')
 		writeFile('someNewfile2')
 		writeFile('someNewfile3')
 		makeDir('someNewDir2')
-		checkChanges(4,done)
+		checkChanges(4, done)
 
 	test 'detect rename', (done) ->
-		renameFile('someNewfile1','someNewfilea')  # unlink, new
-		checkChanges(2,done)
+		renameFile('someNewfile1', 'someNewfilea')  # unlink, new
+		checkChanges(2, done)
 
 	test 'detect subdir file write', (done) ->
 		writeFile('someNewDir1/someNewfile1')
 		writeFile('someNewDir1/someNewfile2')
-		checkChanges(2,done)
+		checkChanges(2, done)
 
 	test 'detect subdir file delete', (done) ->
 		deleteFile('someNewDir1/someNewfile2')
-		checkChanges(1,done)
+		checkChanges(1, done)
 
 	test 'stop watching', ->
 		watcher.close()
@@ -138,6 +138,6 @@ runTests = (opts,describe,test) ->
 # Run tests for each method
 joe.describe 'watchr', (describe,test) ->
 	describe 'watch', (describe,test) ->
-		runTests({preferredMethods:['watch','watchFile']},describe,test)
+		runTests({preferredMethods:['watch','watchFile']}, describe, test)
 	describe 'watchFile', (describe,test) ->
-		runTests({preferredMethods:['watchFile','watch']},describe,test)
+		runTests({preferredMethods:['watchFile','watch']}, describe, test)

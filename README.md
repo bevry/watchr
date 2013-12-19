@@ -31,13 +31,13 @@ You install it via `npm install watchr` and use it via `require('watchr').watch(
 - `stat` (optional, defaults to `null`) a file stat object to use for the path, instead of fetching a new one
 - `interval` (optional, defaults to `5007`) for systems that poll to detect file changes, how often should it poll in millseconds
 - `persistent` (optional, defaults to `true`) whether or not we should keep the node process alive for as long as files are still being watched
-- `duplicateDelay` (optional, defaults to `1000`) sometimes events will fire really fast, this delay is set in place so we don't fire the same event within the timespan. Set to falsey to perform no duplicate detection.
+- `catchupDelay` (optional, defaults to `2000`) because swap files delete the original file, then rename a temporary file over-top of the original file, to ensure the change is reported correctly we must have a delay in place that waits until all change events for that file have finished, before starting the detection of what changed
 - `preferredMethods` (optional, defaults to `['watch','watchFile']`) which order should we prefer our watching methods to be tried?
+- `followLinks` (optional, defaults to `true`) follow symlinks, i.e. use stat rather than lstat
 - `ignorePaths` (optional, defaults to `false`) an array of full paths to ignore
 - `ignoreHiddenFiles` (optional, defaults to `false`) whether or not to ignored files which filename starts with a `.`
 - `ignoreCommonPatterns` (optional, defaults to `true`) whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
 - `ignoreCustomPatterns` (optional, defaults to `null`) any custom ignore patterns that you would also like to ignore along with the common patterns
-- `followLinks` (optional, defaults to `true`) follow symlinks, i.e. use stat rather than lstat
 
 The following events are available to your via the listeners:
 
@@ -104,22 +104,6 @@ You can test the above code snippet by running the following:
 npm install -g watchr
 watchr
 ```
-
-
-
-## Known Issues
-
-- [Text Editor swap files on saving can throw it off.](https://github.com/bevry/watchr/issues/33)
-	- We're working on it. Workaround for the meantime:
-		- For Users:
-			- TextMate: Turn off atomic saves. [Guide.](http://manual.macromates.com/en/saving_files.html)
-			- Sublime Text 3: Add `"atomic_saves": false` to your user preferences
-			- VIM: Disable the `set noswapfile` option and enable the `set nobackup` option
-		- For Watchr implementations:
-			- Set `preferredMethods` to `['watchFile','watch']` that will use the old polling mechanism (slower, but handles this use case)
-
-- [`ENOENT` errors are emitted when dead links a broken symlink is encountered](https://github.com/bevry/watchr/issues/42)
-	- We're working on it. No known workaround.
 
 
 <!-- HISTORY/ -->

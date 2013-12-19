@@ -88,7 +88,7 @@ Watcher = class extends EventEmitter
 		# Because of swap files, the original file may be deleted, and then over-written with by moving a swap file in it's place
 		# Without a catchup delay, we would report the original file's deletion, and ignore the swap file changes
 		# With a catchup delay, we would wait until there is a pause in events, then scan for the correct changes
-		catchupDelay: 1*1000
+		catchupDelay: 2*1000
 
 		# Preferred Methods (optional, defaults to `['watch','watchFile']`)
 		# In which order should use the watch methods when watching the file
@@ -332,7 +332,8 @@ Watcher = class extends EventEmitter
 	- for renamed files: 'rename', fullPath, currentStat, previousStat, newFullPath
 	- rename is possible as the stat.ino is the same for the delete and create
 	###
-	listenersExecuting: 0
+	listenerTasks: null
+	listenerTimeout: null
 	listener: (opts, next) =>
 		# Prepare
 		watchr = @
@@ -347,27 +348,27 @@ Watcher = class extends EventEmitter
 		# Log
 		watchr.log('debug', "Watch triggered on: #{watchr.path}")
 
+		# Delay the execution of the listener tasks, to once the change events have stopped firing
+		clearTimeout(watchr.listenerTimeout)  if watchr.listenerTimeout?
+		watchr.listenerTimeout = setTimeout(
+			->
+				listenerTasks = watchr.listenerTasks
+				watchr.listenerTasks = null
+				watchr.listenerTimeout = null
+				listenerTasks.run()
+			config.catchupDelay
+		)
+
+		# We are a subsequent listener, in which case, just listen to the first listener tasks
+		if watchr.listenerTasks?
+			watchr.listenerTasks.once('complete', next)  if next
+			return @
+
 		# Start the detection process
-		tasks = new TaskGroup().once 'complete', (err) ->
+		watchr.listenerTasks = tasks = new TaskGroup().once 'complete', (err) ->
 			watchr.listenersExecuting -= 1
 			watchr.emit('error', err)
 			return next?(err)
-
-		# Ensure that we give swap files a chance to die
-		tasks.addTask (complete) ->
-			# Check if we care for this
-			watchr.listenersExecuting += 1
-			return complete()  unless config.catchupDelay
-			tryAgain = ->
-				setTimeout(
-					->
-						if watchr.listenersExecuting is 1
-							complete()
-						else
-							tryAgain()
-					config.catchupDelay
-				)
-			tryAgain()
 
 		# Check if the file still exists
 		tasks.addTask (complete) ->
@@ -484,7 +485,6 @@ Watcher = class extends EventEmitter
 							fullPath: childFileFullPath,
 							relativePath: childFileRelativePath,
 							next: (err, childFileWatcher) ->
-								console.log 'asd'
 								return complete(err)  if err
 								watchr.emit('change', 'create', childFileFullPath, childFileWatcher.stat, null)
 								return complete()
@@ -494,8 +494,7 @@ Watcher = class extends EventEmitter
 				# Read the directory, finished adding tasks to the group
 				return complete()
 
-		# Start detection
-		tasks.run()
+		# Tasks are executed via the timeout thing earlier
 
 		# Chain
 		@

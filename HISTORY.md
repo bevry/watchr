@@ -1,6 +1,11 @@
 # History
 
-- v2.4.6 December 18, 2013
+- v2.4.7 December 19, 2013
+	- Fixed: [Text Editor swap files on saving can throw it off](https://github.com/bevry/watchr/issues/33)
+	- Fixed: [`ENOENT` errors are emitted when dead links a broken symlink is encountered](https://github.com/bevry/watchr/issues/42)
+	- Updated dependencies
+
+- v2.4.6 November 18, 2013
 	- Updated dependencies
 
 - v2.4.5 November 17, 2013

@@ -356,7 +356,7 @@ Watcher = class extends EventEmitter
 				watchr.listenerTasks = null
 				watchr.listenerTimeout = null
 				listenerTasks.run()
-			config.catchupDelay
+			config.catchupDelay or 0
 		)
 
 		# We are a subsequent listener, in which case, just listen to the first listener tasks

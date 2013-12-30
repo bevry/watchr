@@ -1,5 +1,8 @@
 # History
 
+- v2.4.8 December 30, 2013
+	- Fixed falsey values of `catchupDelay` option not working
+
 - v2.4.7 December 19, 2013
 	- Fixed: [Text Editor swap files on saving can throw it off](https://github.com/bevry/watchr/issues/33)
 	- Fixed: [`ENOENT` errors are emitted when dead links a broken symlink is encountered](https://github.com/bevry/watchr/issues/42)

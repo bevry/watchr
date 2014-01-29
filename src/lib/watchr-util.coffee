@@ -35,7 +35,7 @@ watchrUtil =
 
 	# Try fsUtil.watch
 	# opts = {path, listener}
-	# next(err, success, 'watch')
+	# next(err, success, 'watch', fswatcher)
 	watch: (opts, next) ->
 		# Prepare
 		[opts, next] = extractOpts(opts, next)
@@ -45,14 +45,14 @@ watchrUtil =
 
 		# Watch
 		try
-			me.fswatcher = fsUtil.watch(opts.path, opts.listener)
-			# must pass the listener here instead of via me.fswatcher.on('change', opts.listener)
+			fswatcher = fsUtil.watch(opts.path, opts.listener)
+			# must pass the listener here instead of doing fswatcher.on('change', opts.listener)
 			# as the latter is not supported on node 0.6 (only 0.8+)
 		catch err
-			return next(err, false, 'watch')
+			return next(err, false, 'watch', fswatcher)
 
 		# Apply
-		return next(null, true, 'watch')
+		return next(null, true, 'watch', fswatcher)
 
 	# Try fsUtil.watchFile
 	# opts = {path, persistent?, interval?, listener}
@@ -75,7 +75,7 @@ watchrUtil =
 
 	# Try one watch method first, then try the other
 	# opts = {path, methods?, parsistent?, interval?, listener}
-	# next(err, success, method)
+	# next(err, success, method, fswatcher?)
 	watchMethods: (opts, next) ->
 		# Prepare
 		[opts, next] = extractOpts(opts, next)
@@ -88,20 +88,20 @@ watchrUtil =
 		methodTwo = watchrUtil[opts.methods[1]]
 
 		# Try first
-		methodOne opts, (errOne, success, method) ->
+		methodOne opts, (errOne, success, method, fswatcher) ->
 			# Move on if succeeded
-			return next(null, success, method)  if success
+			return next(null, success, method, fswatcher)  if success
 			# Otherwise...
 
 			# Try second
-			methodTwo opts, (errTwo, success, method) ->
+			methodTwo opts, (errTwo, success, method, fswatcher) ->
 				# Move on if succeeded
-				return next(null, success, method)  if success
+				return next(null, success, method, fswatcher)  if success
 				# Otherwise...
 
 				# Log errors and fail
 				errCombined = new Error("Both watch methods failed on #{opts.path}:\n#{errOne.stack.toString()}\n#{errTwo.stack.toString()}")
-				return next(errCombined, false, null)
+				return next(errCombined, false, null, fswatcher)
 
 		# Chain
 		return @

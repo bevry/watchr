@@ -672,8 +672,9 @@ Watcher = class extends EventEmitter
 			persistent: config.persistent
 			interval: config.interval
 			listener: -> watchr.listener()
-			next: (err, success, method) ->
+			next: (err, success, method, fswatcher) ->
 				# Check
+				watchr.fswatcher = fswatcher
 				watchr.emit('error', err)  if err
 
 				# Error?

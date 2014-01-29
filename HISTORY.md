@@ -1,7 +1,10 @@
 # History
 
+- v2.4.9 January 28, 2014
+	- Fixed `"me" is undefined` errors (regression since v2.4.7)
+
 - v2.4.8 December 30, 2013
-	- Fixed falsey values of `catchupDelay` option not working
+	- You can now pass falsey values for`catchupDelay` to disable it
 
 - v2.4.7 December 19, 2013
 	- Fixed: [Text Editor swap files on saving can throw it off](https://github.com/bevry/watchr/issues/33)

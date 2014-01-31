@@ -66,7 +66,7 @@ watchrUtil =
 
 		# Watch
 		try
-			fsUtil.watchFile(opts.path, {persistent: opts.persistent, inteval: opts.interval}, opts.listener)
+			fsUtil.watchFile(opts.path, {persistent: opts.persistent, interval: opts.interval}, opts.listener)
 		catch err
 			return next(err, false, 'watchFile')
 

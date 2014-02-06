@@ -1,5 +1,9 @@
 # History
 
+- v2.4.10 February 7, 2014
+	- Fixed watchr emitting error events incorrectly (regression since v2.4.7)
+		- Thanks to [Aaron O'Mullan](https://github.com/AaronO) for [pull request #59](https://github.com/bevry/watchr/pull/59)
+
 - v2.4.9 January 28, 2014
 	- Fixed `"me" is undefined` errors (regression since v2.4.7)
 

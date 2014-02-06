@@ -367,7 +367,7 @@ Watcher = class extends EventEmitter
 		# Start the detection process
 		watchr.listenerTasks = tasks = new TaskGroup().once 'complete', (err) ->
 			watchr.listenersExecuting -= 1
-			watchr.emit('error', err)
+			watchr.emit('error', err)  if err
 			return next?(err)
 
 		# Check if the file still exists

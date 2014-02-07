@@ -1,5 +1,9 @@
 # History
 
+- v2.4.11 February 7, 2014
+	- Fixed interval option not beeing passed on to child watchers (regression since v2.4.7)
+		- Thanks to [David Byrd](https://github.com/thebyrd) for [pull request #58](https://github.com/bevry/watchr/pull/58)
+
 - v2.4.10 February 7, 2014
 	- Fixed watchr emitting error events incorrectly (regression since v2.4.7)
 		- Thanks to [Aaron O'Mullan](https://github.com/AaronO) for [pull request #59](https://github.com/bevry/watchr/pull/59)

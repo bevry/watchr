@@ -151,6 +151,7 @@ No sponsors yet! Will you be the first?
 
 These amazing people have contributed code to this project:
 
+- [AaronO](https://github.com/AaronO) — [view contributions](https://github.com/bevry/watchr/commits?author=AaronO)
 - [adamsanderson](https://github.com/adamsanderson) — [view contributions](https://github.com/bevry/watchr/commits?author=adamsanderson)
 - [balupton](https://github.com/balupton) — [view contributions](https://github.com/bevry/watchr/commits?author=balupton)
 - [Casey Foster](https://github.com/caseywebdev) — [view contributions](https://github.com/bevry/watchr/commits?author=caseywebdev)

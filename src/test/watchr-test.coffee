@@ -14,7 +14,7 @@ joe = require('joe')
 wait = (delay,fn) -> setTimeout(fn,delay)
 
 # Test Data
-debug = process.env.TRAVIS_NODE_VERSION?
+debug = true or process.env.TRAVIS_NODE_VERSION?
 batchDelay = 10*1000
 outPath = pathUtil.join(__dirname,'../../test/out')
 writetree =
@@ -76,7 +76,7 @@ runTests = (opts,describe,test) ->
 			listener: changeHappened
 			ignorePaths: [pathUtil.join(outPath,'blah')]
 			ignoreHiddenFiles: true
-			outputLog: true
+			outputLog: debug
 			next: (err,_watcher) ->
 				watcher = _watcher
 				wait batchDelay, -> done(err)

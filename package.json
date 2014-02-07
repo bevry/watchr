@@ -1,6 +1,6 @@
 {
   "name": "watchr",
-  "version": "2.4.10",
+  "version": "2.4.11",
   "description": "Better file system watching for Node.js",
   "homepage": "https://github.com/bevry/watchr",
   "license": {
@@ -29,6 +29,7 @@
     "Benjamin Lupton <b@lupton.cc> (http://balupton.com)"
   ],
   "contributors": [
+    "AaronO (https://github.com/AaronO)",
     "adamsanderson (https://github.com/adamsanderson)",
     "balupton (https://github.com/balupton)",
     "Casey Foster (https://github.com/caseywebdev)",

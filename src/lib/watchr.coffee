@@ -386,8 +386,8 @@ Watcher = class extends EventEmitter
 					watchr.log('debug', "Determined delete: #{watchr.path}")
 
 					# Apply
-					watchr.stat = null
 					watchr.close('deleted')
+					watchr.stat = null
 
 					# Exit
 					return tasks.exit()

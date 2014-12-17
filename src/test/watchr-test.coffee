@@ -36,10 +36,14 @@ runTests = (opts,describe,test) ->
 
 	# Change detection
 	changes = []
-	checkChanges = (expectedChanges,next) ->
+	checkChanges = (expectedChanges,extraTest,next) ->
+		if not next
+			next = extraTest
+			extraTest = null
 		wait batchDelay, ->
 			console.log(changes)  if changes.length isnt expectedChanges
 			assert.equal(changes.length, expectedChanges, "#{changes.length} changes ran out of #{expectedChanges} changes")
+			extraTest(changes) if extraTest
 			changes = []
 			next()
 	changeHappened = (args...) ->
@@ -98,7 +102,14 @@ runTests = (opts,describe,test) ->
 
 	test 'detect delete', (done) ->
 		deleteFile('b/b-b')
-		checkChanges(1, done)
+		checkChanges(
+			1,
+			(changes) ->
+				# make sure previous stat is given
+				console.log(changes[0]) if not changes[0][3]
+				assert.ok(changes[0][3], "previous stat not given to delete")
+			, done
+		)
 
 	test 'detect delete ignored on hidden files', (done) ->
 		deleteFile('.c/c-a')

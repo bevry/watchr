@@ -2,6 +2,7 @@
 pathUtil = require('path')
 fsUtil = require('fs')
 balUtil = require('bal-util')
+rimraf = require('rimraf')
 extendr = require('extendr')
 watchr = require(__dirname+'/../lib/watchr')
 assert = require('assert')
@@ -67,7 +68,7 @@ runTests = (opts,describe,test) ->
 
 	# Tests
 	test 'remove old test files', (done) ->
-		balUtil.rmdirDeep outPath, (err) ->
+		rimraf outPath, (err) ->
 			done(err)
 
 	test 'write new test files', (done) ->

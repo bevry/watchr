@@ -1,6 +1,6 @@
 {
   "name": "watchr",
-  "version": "2.4.11",
+  "version": "2.4.12",
   "description": "Better file system watching for Node.js",
   "homepage": "https://github.com/bevry/watchr",
   "license": {
@@ -36,6 +36,7 @@
     "Casey Foster (https://github.com/caseywebdev)",
     "FredrikNoren (https://github.com/FredrikNoren)",
     "Robson Roberto Souza Peixoto <robsonpeixoto@gmail.com> (https://github.com/robsonpeixoto)",
+    "Stuk (https://github.com/Stuk)",
     "thebyrd (https://github.com/thebyrd)"
   ],
   "bugs": {
@@ -49,20 +50,22 @@
     "node": ">=0.4"
   },
   "dependencies": {
-    "bal-util": "~2.4.1",
+    "scandirectory": "~2.5.0",
     "typechecker": "~2.0.8",
     "extendr": "~2.1.0",
     "eachr": "~2.0.2",
-    "safefs": "~3.1.1",
-    "taskgroup": "~3.3.8",
+    "safefs": "~3.1.2",
+    "taskgroup": "~4.0.5",
     "ignorefs": "~1.0.0",
     "extract-opts": "~2.2.0"
   },
   "devDependencies": {
+    "bal-util": "~2.5.0",
     "coffee-script": "~1.8.0",
     "joe": "~1.5.0",
     "joe-reporter-console": "~1.2.1",
-    "projectz": "~0.3.17"
+    "projectz": "~0.3.17",
+    "rimraf": "^2.2.8"
   },
   "directories": {
     "lib": "./out/lib"

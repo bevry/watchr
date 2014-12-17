@@ -158,6 +158,7 @@ These amazing people have contributed code to this project:
 - [Casey Foster](https://github.com/caseywebdev) — [view contributions](https://github.com/bevry/watchr/commits?author=caseywebdev)
 - [FredrikNoren](https://github.com/FredrikNoren) — [view contributions](https://github.com/bevry/watchr/commits?author=FredrikNoren)
 - [Robson Roberto Souza Peixoto](https://github.com/robsonpeixoto) <robsonpeixoto@gmail.com> — [view contributions](https://github.com/bevry/watchr/commits?author=robsonpeixoto)
+- [Stuk](https://github.com/Stuk) — [view contributions](https://github.com/bevry/watchr/commits?author=Stuk)
 - [thebyrd](https://github.com/thebyrd) — [view contributions](https://github.com/bevry/watchr/commits?author=thebyrd)
 
 [Become a contributor!](https://github.com/bevry/watchr/blob/master/CONTRIBUTING.md#files)

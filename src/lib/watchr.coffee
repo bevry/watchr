@@ -3,7 +3,7 @@
 pathUtil = require('path')
 
 # Require our helper modules
-balUtil = require('bal-util')
+scandir = require('scandirectory')
 fsUtil = require('safefs')
 ignorefs = require('ignorefs')
 extendr = require('extendr')
@@ -365,7 +365,7 @@ Watcher = class extends EventEmitter
 			return @
 
 		# Start the detection process
-		watchr.listenerTasks = tasks = new TaskGroup().once 'complete', (err) ->
+		watchr.listenerTasks = tasks = new TaskGroup().done (err) ->
 			watchr.listenersExecuting -= 1
 			watchr.emit('error', err)  if err
 			return next?(err)
@@ -620,7 +620,7 @@ Watcher = class extends EventEmitter
 
 		# Cycle through the directory if necessary
 		if watchr.isDirectory()
-			balUtil.scandir(
+			scandir(
 				# Path
 				path: watchr.path
 
@@ -840,7 +840,7 @@ watch = (opts,next) ->
 		# Check its format
 		if typeChecker.isArray(paths)
 			# Prepare
-			tasks = new TaskGroup().setConfig(concurrency:0).on 'complete', (err) ->
+			tasks = new TaskGroup(concurrency:0).whenDone (err) ->
 				next?(err,result)
 			paths.forEach (path) ->
 				tasks.addTask (complete) ->

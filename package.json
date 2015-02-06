@@ -1,6 +1,6 @@
 {
   "name": "watchr",
-  "version": "2.4.12",
+  "version": "2.4.13",
   "description": "Better file system watching for Node.js",
   "homepage": "https://github.com/bevry/watchr",
   "license": {
@@ -12,7 +12,7 @@
     "npmdownloads": true,
     "david": true,
     "daviddev": true,
-    "gittip": "bevry",
+    "gratipay": "bevry",
     "flattr": "344188/balupton-on-Flattr",
     "paypal": "QB8GQPZAH84N6",
     "bitcoin": "https://coinbase.com/checkouts/9ef59f5479eec1d97d63382c9ebcb93a",
@@ -50,21 +50,21 @@
     "node": ">=0.4"
   },
   "dependencies": {
-    "scandirectory": "~2.5.0",
-    "typechecker": "~2.0.8",
-    "extendr": "~2.1.0",
-    "eachr": "~2.0.2",
-    "safefs": "~3.1.2",
-    "taskgroup": "~4.0.5",
-    "ignorefs": "~1.0.0",
-    "extract-opts": "~2.2.0"
+    "scandirectory": "^2.5.0",
+    "typechecker": "^2.0.8",
+    "extendr": "^2.1.0",
+    "eachr": "^2.0.2",
+    "safefs": "^3.1.2",
+    "taskgroup": "^4.2.0",
+    "ignorefs": "^1.0.0",
+    "extract-opts": "^2.2.0"
   },
   "devDependencies": {
-    "bal-util": "~2.5.0",
-    "coffee-script": "~1.8.0",
-    "joe": "~1.5.0",
-    "joe-reporter-console": "~1.2.1",
-    "projectz": "~0.3.17",
+    "bal-util": "^2.5.0",
+    "coffee-script": "^1.9.0",
+    "joe": "^1.6.0",
+    "joe-reporter-console": "^1.2.1",
+    "projectz": "^0.3.17",
     "rimraf": "^2.2.8"
   },
   "directories": {

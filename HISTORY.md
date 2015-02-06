@@ -1,5 +1,8 @@
 # History
 
+## v2.4.13 February 7, 2015
+- Updated dependencies
+
 ## v2.4.12 December 17, 2014
 - Fixed `previousStat` not existing sporadically on delete events
 	- Thanks to [Stuart Knightley](https://github.com/Stuk) for [pull request #61](https://github.com/bevry/watchr/pull/61)

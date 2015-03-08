@@ -399,6 +399,16 @@ Watcher = class extends EventEmitter
 
 					# Update
 					watchr.stat = currentStat = stat
+					
+					# Create a new watcher for a new file created in place of an existing one
+					if watchr.stat.birthtime > previousStat.birthtime
+						config = watchr.config;
+						config.listener = watchr.listener;
+						config.listeners = watchr.listeners;
+						
+						watchers[config.path] = null;
+						
+						createWatcher(config, next);
 
 					# Get on with it
 					return complete()

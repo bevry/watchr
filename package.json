@@ -64,7 +64,7 @@
   "editions": [
     {
       "description": "Source + CoffeeScript + Require",
-      "entry": "src/lib/getmac.coffee",
+      "entry": "src/lib/watchr.coffee",
       "directory": "src",
       "syntaxes": [
         "coffeescript",
@@ -73,7 +73,7 @@
     },
     {
       "description": "CoffeeScript Compiled JavaScript + ES5 + Require",
-      "entry": "es5/lib/getmac.js",
+      "entry": "es5/lib/watchr.js",
       "directory": "es5",
       "syntaxes": [
         "javascript",

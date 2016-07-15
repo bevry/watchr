@@ -44,8 +44,9 @@ Better file system watching for Node.js
 
 <p>This package is published with the following editions:</p>
 
-<ul><li><code>watchr/src/lib/getmac.coffee</code> is Source + CoffeeScript + <a href="https://nodejs.org/dist/latest-v5.x/docs/api/modules.html" title="Node/CJS Modules">Require</a></li>
-<li><code>watchr/es5/lib/getmac.js</code> is CoffeeScript Compiled JavaScript + ES5 + <a href="https://nodejs.org/dist/latest-v5.x/docs/api/modules.html" title="Node/CJS Modules">Require</a></li></ul>
+<ul><li><code>watchr/src/lib/watchr.coffee</code> is Source + CoffeeScript + <a href="https://nodejs.org/dist/latest-v5.x/docs/api/modules.html" title="Node/CJS Modules">Require</a></li>
+<li><code>watchr</code> aliases <code>watchr/es5/lib/watchr.js</code></li>
+<li><code>watchr/es5/lib/watchr.js</code> is CoffeeScript Compiled JavaScript + ES5 + <a href="https://nodejs.org/dist/latest-v5.x/docs/api/modules.html" title="Node/CJS Modules">Require</a></li></ul>
 
 <!-- /INSTALL -->
 

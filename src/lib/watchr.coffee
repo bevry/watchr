@@ -400,19 +400,13 @@ class Watcher extends EventEmitter
 
 					# Update
 					watchr.stat = currentStat = stat
-					
-					# Create a new watcher for a new file created in place of an existing one
-					if watchr.stat.birthtime > previousStat.birthtime
-						config = watchr.config;
-						config.listener = watchr.listener;
-						config.listeners = watchr.listeners;
-						
-						watchers[config.path] = null;
-						
-						createWatcher(config, next);
 
-					# Get on with it
-					return complete()
+					# If there is a new file at the same path as the old file, then recreate the watchr
+					if watchr.stat.birthtime isnt previousStat.birthtime
+						createWatcher(@, complete)
+					else
+						# Get on with it
+						return complete()
 
 		# Check if the file has changed
 		tasks.addTask ->
@@ -775,6 +769,7 @@ If we have an already existing watching instance, then just add our listeners to
 If we don't, then create a watching instance
 Fire the next callback once done
 opts = {path, listener, listeners}
+opts = watcher instance
 next(err,watcherInstance)
 ###
 createWatcher = (opts,next) ->
@@ -786,7 +781,17 @@ createWatcher = (opts,next) ->
 		next?(null, null)
 		return
 
-	# Check if we are already watching that path
+	# Should we clone a watcher instance?
+	# By copying relevant configuration, closing the old watcher, and creating a new
+	if opts instanceof Watcher
+		opts.close()
+		opts = extendr.extend({}, opts.config, {
+			listener: opts.listener,
+			listeners: opts.listeners
+		})
+		# continue to create a new, watchers[opts.path] should be deleted now due to opts.close
+
+	# Use existing
 	if watchers[opts.path]?
 		# We do, so let's use that one instead
 		watcher = watchers[opts.path]
@@ -798,6 +803,7 @@ createWatcher = (opts,next) ->
 		# as we don't create a new watcher, we must fire the next callback ourselves
 		next?(null, watcher)
 
+	# Create a new one
 	else
 		# We don't, so let's create a new one
 		attempt = 0
@@ -852,8 +858,7 @@ watch = (opts,next) ->
 				next?(err, result)
 			paths.forEach (path) ->
 				tasks.addTask (complete) ->
-					localOpts = extendr.extend({}, opts)
-					localOpts.path = path
+					localOpts = extendr.extend({}, opts, {path})
 					watcher = createWatcher(localOpts,complete)
 					result.push(watcher)  if watcher
 			tasks.run()

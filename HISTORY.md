@@ -1,5 +1,9 @@
 # History
 
+## v2.6.0 2016 July 15
+- Potentially fixed swapfiles breaking watching
+	- Thanks to [Josh Levine](https://github.com/jlevine22) for [pull request #76](https://github.com/bevry/watchr/pull/76)
+
 ## v2.5.0 2016 July 15
 - Updated dependencies
 - Updated engines to be node >=0.12 as to align with safefs v4

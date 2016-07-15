@@ -3,9 +3,7 @@
   "version": "2.4.13",
   "description": "Better file system watching for Node.js",
   "homepage": "https://github.com/bevry/watchr",
-  "license": {
-    "type": "MIT"
-  },
+  "license": "MIT",
   "badges": {
     "travis": true,
     "npm": true,

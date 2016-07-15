@@ -8,14 +8,14 @@ fsUtil = require('safefs')
 ignorefs = require('ignorefs')
 extendr = require('extendr')
 eachr = require('eachr')
-{extractOpts} = require('extract-opts')
+extractOpts = require('extract-opts')
 typeChecker = require('typechecker')
 {TaskGroup} = require('taskgroup')
 watchrUtil = require('./watchr-util')
 
 # Require the node.js event emitter
 # This provides us with the event system that we use for binding and trigger events
-EventEmitter = require('events').EventEmitter
+{EventEmitter} = require('events')
 
 ###
 Now to make watching files more convient and managed, we'll create a class which we can use to attach to each file.
@@ -30,7 +30,7 @@ Events:
 ###
 watchersTotal = 0
 watchers = {}
-Watcher = class extends EventEmitter
+class Watcher extends EventEmitter
 	# The path this class instance is attached to
 	path: null
 
@@ -361,7 +361,7 @@ Watcher = class extends EventEmitter
 
 		# We are a subsequent listener, in which case, just listen to the first listener tasks
 		if watchr.listenerTasks?
-			watchr.listenerTasks.once('complete', next)  if next
+			watchr.listenerTasks.done(next)  if next
 			return @
 
 		# Start the detection process
@@ -389,8 +389,9 @@ Watcher = class extends EventEmitter
 					watchr.close('deleted')
 					watchr.stat = null
 
-					# Exit
-					return tasks.exit()
+					# Clear the remaining tasks, as they are no longer needed
+					tasks.clearRemaining()
+					return complete()
 
 				# Update the stat of the file
 				watchr.getStat (err, stat) ->
@@ -404,17 +405,14 @@ Watcher = class extends EventEmitter
 					return complete()
 
 		# Check if the file has changed
-		tasks.addTask (complete) ->
+		tasks.addTask ->
 			# Check if it is the same
+			# as if it is, then nothing has changed, so ignore
 			if watchrUtil.statChanged(previousStat, currentStat) is false
-				# nothing has changed, so ignore
 				watchr.log('debug', "Determined same: #{watchr.path}", previousStat, currentStat)
 
-				# Exit
-				return tasks.exit()
-
-			# Complete
-			return complete()
+				# Clear the remaining tasks, as they are no longer needed
+				tasks.clearRemaining()
 
 		# Check what has changed
 		tasks.addGroup (addGroup, addTask, complete) ->
@@ -841,7 +839,7 @@ watch = (opts,next) ->
 		if typeChecker.isArray(paths)
 			# Prepare
 			tasks = new TaskGroup(concurrency:0).whenDone (err) ->
-				next?(err,result)
+				next?(err, result)
 			paths.forEach (path) ->
 				tasks.addTask (complete) ->
 					localOpts = extendr.extend({}, opts)

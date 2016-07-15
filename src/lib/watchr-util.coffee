@@ -1,6 +1,6 @@
 # Import
 extendr = require('extendr')
-{extractOpts} = require('extract-opts')
+extractOpts = require('extract-opts')
 fsUtil = require('safefs')
 
 # Define
@@ -13,8 +13,8 @@ watchrUtil =
 
 		# Has the file contents changed?
 		else if old? and current?
-			old = extendr.dereference(old)
-			current = extendr.dereference(current)
+			old = extendr.dereferenceJSON(old)
+			current = extendr.dereferenceJSON(current)
 
 			delete old.atime  if old.atime?
 			delete old.ctime  if old.ctime?

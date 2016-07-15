@@ -1,5 +1,6 @@
-# v1.3.18 June 8, 2014
+# 2016 March 8
 # https://github.com/bevry/base
+
 root = true
 
 [*]
@@ -14,5 +15,9 @@ indent_style = space
 indent_size = 2
 
 [*.yml]
+indent_style = space
+indent_size = 2
+
+[*.md]
 indent_style = space
 indent_size = 2

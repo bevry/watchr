@@ -4,7 +4,7 @@ fsUtil = require('fs')
 balUtil = require('bal-util')
 rimraf = require('rimraf')
 extendr = require('extendr')
-watchr = require(__dirname+'/../lib/watchr')
+watchr = require('../lib/watchr')
 assert = require('assert')
 joe = require('joe')
 

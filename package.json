@@ -63,43 +63,46 @@
   },
   "editions": [
     {
-      "description": "Source + CoffeeScript + Require",
-      "entry": "src/lib/watchr.coffee",
-      "directory": "src",
+      "description": "Source + ESNext + Require",
+      "entry": "index.js",
+      "directory": "source",
       "syntaxes": [
-        "coffeescript",
-        "require"
+        "javascript",
+        "esnext",
+        "require",
+        "const",
+        "let"
       ]
     },
     {
-      "description": "CoffeeScript Compiled JavaScript + ES5 + Require",
-      "entry": "es5/lib/watchr.js",
-      "directory": "es5",
+      "description": "Babel Compiled + ES2015 + Require",
+      "entry": "index.js",
+      "directory": "es2015",
       "syntaxes": [
         "javascript",
-        "es5",
+        "es2015",
         "require"
       ]
     }
   ],
-  "main": "es5/lib/watchr.js",
-  "bin": {
-    "watchr": "bin/watchr"
-  },
+  "main": "index.js",
+  "bin": "bin",
   "scripts": {
     "setup": "npm install",
-    "compile": "npm run compile:coffeescript",
-    "compile:coffeescript": "coffee -bco ./es5 ./src",
-    "meta": "npm run meta:projectz",
+    "clean": "rm -Rf ./docs ./es2015",
+    "compile": "npm run compile:es2015",
+    "compile:es2015": "babel ./source --out-dir ./es2015 --presets es2015",
+    "meta": "npm run meta:docs && npm run meta:projectz",
+    "meta:docs": "documentation build -f html -o ./docs -g --shallow ./source/**.js",
     "meta:projectz": "projectz compile",
     "prepare": "npm run compile && npm run test && npm run meta",
     "release": "npm run prepare && npm run release:publish && npm run release:tag && npm run release:push",
     "release:publish": "npm publish",
     "release:tag": "git tag v$npm_package_version -a",
     "release:push": "git push origin master && git push origin --tags",
-    "pretest": "npm run test:coffeelint",
-    "test:coffeelint": "coffeelint ./src",
-    "test": "node --harmony ./es5/test/watchr-test.js"
+    "pretest": "npm run test:eslint",
+    "test:eslint": "eslint ./source",
+    "test": "node --harmony -e \"require('editions').requirePackage(process.cwd(), require, 'test.js')\""
   },
   "dependencies": {
     "scandirectory": "^2.5.0",
@@ -112,12 +115,11 @@
     "extract-opts": "^3.3.1"
   },
   "devDependencies": {
-    "bal-util": "^2.5.1",
-    "coffee-script": "^1.10.0",
-    "coffeelint": "^1.15.7",
+    "bal-util": "^2.6.0",
+    "eslint": "^2.13.1",
     "joe": "^1.8.0",
     "joe-reporter-console": "^1.2.1",
-    "projectz": "^1.1.6",
-    "rimraf": "^2.5.3"
+    "projectz": "^1.2.0",
+    "rimraf": "^2.5.4"
   }
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Require
-var watchr = require('../es5/lib/watchr')
+var watchr = require('./')
 
 // Watch a directory or file
 console.log('Watch our paths')

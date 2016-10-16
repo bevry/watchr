@@ -1,5 +1,5 @@
 <!--
-2016 June 13
+2016 October 4
 https://github.com/bevry/base
 -->
 
@@ -108,11 +108,11 @@ To publish your changes as the project owner:
 1. Add an entry to the changelog following the format of the previous entries, an example of this is:
 
   ``` markdown
-  - v6.29.0 2013 April 1
-    - Progress on [issue #474](https://github.com/bevry/docpad/issues/474)
-    - DocPad will now set permissions based on the process's ability
-      - Thanks to [Avi Deitcher](https://github.com/deitch), [Stephan Lough](https://github.com/stephanlough) for [issue #165](https://github.com/bevry/docpad/issues/165)
-    - Updated dependencies
+  ## v6.29.0 2013 April 1
+  - Progress on [issue #474](https://github.com/bevry/docpad/issues/474)
+  - DocPad will now set permissions based on the process's ability
+    - Thanks to [Avi Deitcher](https://github.com/deitch), [Stephan Lough](https://github.com/stephanlough) for [issue #165](https://github.com/bevry/docpad/issues/165)
+  - Updated dependencies
   ```
 
 

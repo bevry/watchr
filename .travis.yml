@@ -1,4 +1,4 @@
-# 2016 April 27
+# 2016 October 10
 # https://github.com/bevry/base
 
 # Use the latest travis infrastructure
@@ -10,7 +10,6 @@ node_js:
   - "0.10"
   - "0.12"
   - "4"
-  - "5"
   - "6"
 cache:
   directories:

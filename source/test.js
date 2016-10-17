@@ -1,155 +1,204 @@
-# Requires
-pathUtil = require('path')
-fsUtil = require('fs')
-balUtil = require('bal-util')
-rimraf = require('rimraf')
-extendr = require('extendr')
-watchr = require('../lib/watchr')
-assert = require('assert')
-joe = require('joe')
+/* eslint no-console:0 no-sync:0 */
 
-# =====================================
-# Configuration
+// Requires
+const pathUtil = require('path')
+const fsUtil = require('fs')
+const balUtil = require('bal-util')
+const rimraf = require('rimraf')
+const extendr = require('extendr')
+const assert = require('assert-helpers')
+const joe = require('joe')
+const watchr = require('./index')
 
-# Helpers
-wait = (delay,fn) -> setTimeout(fn,delay)
+// =====================================
+// Configuration
 
-# Test Data
-debug = true or process.env.TRAVIS_NODE_VERSION?
-batchDelay = 10*1000
-outPath = pathUtil.join(__dirname,'../../test/out')
-writetree =
-	'a': 'a content'
-	'b':
-		'b-a': 'b-a content'
+// Helpers
+function wait (delay, fn) {
+	return setTimeout(fn, delay)
+}
+
+// Test Data
+const debug = /* process.env.TRAVIS_NODE_VERSION || */ true
+const batchDelay = 10 * 1000
+const outPath = pathUtil.join(__dirname, '../../test/out')
+const writetree = {
+	'a': 'a content',
+	'b': {
+		'b-a': 'b-a content',
 		'b-b': 'b-b content'
-	'.c':
+	},
+	'.c': {
 		'c-a': 'c-a content'
+	},
 	'blah': 'blah content'
+}
 
 
-# =====================================
-# Tests
+// =====================================
+// Tests
 
-runTests = (opts,describe,test) ->
-	# Prepare
-	watcher = null
+function runTests (opts, describe, test) {
+	// Prepare
+	let watcher = null
 
-	# Change detection
-	changes = []
-	checkChanges = (expectedChanges,extraTest,next) ->
-		if not next
+	// Change detection
+	let changes = []
+	function checkChanges (expectedChanges, extraTest, next) {
+		if ( !next ) {
 			next = extraTest
 			extraTest = null
-		wait batchDelay, ->
-			console.log(changes)  if changes.length isnt expectedChanges
-			assert.equal(changes.length, expectedChanges, "#{changes.length} changes ran out of #{expectedChanges} changes")
-			extraTest(changes) if extraTest
+		}
+		wait(batchDelay, function () {
+			if ( changes.length !== expectedChanges ) {
+				console.log(changes)
+			}
+			assert.equal(changes.length, expectedChanges, `${changes.length} changes ran out of ${expectedChanges} changes`)
+			if ( extraTest ) {
+				extraTest(changes)
+			}
 			changes = []
 			next()
-	changeHappened = (args...) ->
+		})
+	}
+	function changeHappened (...args) {
 		changes.push(args)
-		console.log("a watch event occured: #{changes.length}", args)  if debug
+		if ( debug ) {
+			console.log(`a watch event occured: ${changes.length}`, args)
+		}
+	}
 
-	# Files changes
-	writeFile = (fileRelativePath) ->
-		fileFullPath = pathUtil.join(outPath, fileRelativePath)
-		fsUtil.writeFileSync(fileFullPath, "#{fileRelativePath} now has the random number #{Math.random()}")
-	deleteFile = (fileRelativePath) ->
-		fileFullPath = pathUtil.join(outPath, fileRelativePath)
+	// Files changes
+	function writeFile (fileRelativePath) {
+		const fileFullPath = pathUtil.join(outPath, fileRelativePath)
+		fsUtil.writeFileSync(fileFullPath, `${fileRelativePath} now has the random number ${Math.random()}`)
+	}
+	function deleteFile (fileRelativePath) {
+		const fileFullPath = pathUtil.join(outPath, fileRelativePath)
 		fsUtil.unlinkSync(fileFullPath)
-	makeDir = (fileRelativePath) ->
-		fileFullPath = pathUtil.join(outPath, fileRelativePath)
-		fsUtil.mkdirSync(fileFullPath,'700')
-	renameFile = (fileRelativePath1,fileRelativePath2) ->
-		fileFullPath1 = pathUtil.join(outPath, fileRelativePath1)
-		fileFullPath2 = pathUtil.join(outPath, fileRelativePath2)
-		fsUtil.renameSync(fileFullPath1,fileFullPath2)
+	}
+	function makeDir (fileRelativePath) {
+		const fileFullPath = pathUtil.join(outPath, fileRelativePath)
+		fsUtil.mkdirSync(fileFullPath, '700')
+	}
+	function renameFile (fileRelativePath1, fileRelativePath2) {
+		const fileFullPath1 = pathUtil.join(outPath, fileRelativePath1)
+		const fileFullPath2 = pathUtil.join(outPath, fileRelativePath2)
+		fsUtil.renameSync(fileFullPath1, fileFullPath2)
+	}
 
-	# Tests
-	test 'remove old test files', (done) ->
-		rimraf outPath, (err) ->
+	// Tests
+	test('remove old test files', function (done) {
+		rimraf(outPath, function (err) {
 			done(err)
+		})
+	})
 
-	test 'write new test files', (done) ->
-		balUtil.writetree outPath, writetree, (err) ->
+	test('write new test files', function (done) {
+		balUtil.writetree(outPath, writetree, function (err) {
 			done(err)
+		})
+	})
 
-	test 'start watching', (done) ->
+	test('start watching', function (done) {
 		watchr.watch(extendr.extend({
-			path: outPath
-			listener: changeHappened
-			ignorePaths: [pathUtil.join(outPath,'blah')]
-			ignoreHiddenFiles: true
-			outputLog: debug
-			next: (err,_watcher) ->
+			path: outPath,
+			listener: changeHappened,
+			ignorePaths: [pathUtil.join(outPath, 'blah')],
+			ignoreHiddenFiles: true,
+			outputLog: debug,
+			next (err, _watcher) {
 				watcher = _watcher
-				wait batchDelay, -> done(err)
-		},opts)).on 'error', (err) ->
-			console.log err, err?.stack
+				wait(batchDelay, function () {
+					done(err)
+				})
+			}
+		}, opts)).on('error', function (err) {
+			console.log(err, err && err.stack)
+		})
+	})
 
-	test 'detect write', (done) ->
+	test('detect write', function (done) {
 		writeFile('a')
 		writeFile('b/b-a')
 		checkChanges(2, done)
+	})
 
-	test 'detect write ignored on hidden files', (done) ->
+	test('detect write ignored on hidden files', function (done) {
 		writeFile('.c/c-a')
 		checkChanges(0, done)
+	})
 
-	test 'detect write ignored on ignored files', (done) ->
+	test('detect write ignored on ignored files', function (done) {
 		writeFile('blah')
 		checkChanges(0, done)
+	})
 
-	test 'detect delete', (done) ->
+	test('detect delete', function (done) {
 		deleteFile('b/b-b')
 		checkChanges(
 			1,
-			(changes) ->
-				# make sure previous stat is given
-				console.log(changes[0]) if not changes[0][3]
-				assert.ok(changes[0][3], "previous stat not given to delete")
-			, done
+			function (changes) {
+				// make sure previous stat is given
+				if ( !changes[0][3] ) {
+					console.log(changes[0])
+				}
+				assert.ok(changes[0][3], 'previous stat not given to delete')
+			},
+			done
 		)
+	})
 
-	test 'detect delete ignored on hidden files', (done) ->
+	test('detect delete ignored on hidden files', function (done) {
 		deleteFile('.c/c-a')
 		checkChanges(0, done)
+	})
 
-	test 'detect delete ignored on ignored files', (done) ->
+	test('detect delete ignored on ignored files', function (done) {
 		deleteFile('blah')
 		checkChanges(0, done)
+	})
 
-	test 'detect mkdir', (done) ->
+	test('detect mkdir', function (done) {
 		makeDir('someNewDir1')
 		checkChanges(1, done)
+	})
 
-	test 'detect mkdir and write', (done) ->
+	test('detect mkdir and write', function (done) {
 		writeFile('someNewfile1')
 		writeFile('someNewfile2')
 		writeFile('someNewfile3')
 		makeDir('someNewDir2')
 		checkChanges(4, done)
+	})
 
-	test 'detect rename', (done) ->
-		renameFile('someNewfile1', 'someNewfilea')  # unlink, new
+	test('detect rename', function (done) {
+		renameFile('someNewfile1', 'someNewfilea')  // unlink, new
 		checkChanges(2, done)
+	})
 
-	test 'detect subdir file write', (done) ->
+	test('detect subdir file write', function (done) {
 		writeFile('someNewDir1/someNewfile1')
 		writeFile('someNewDir1/someNewfile2')
 		checkChanges(2, done)
+	})
 
-	test 'detect subdir file delete', (done) ->
+	test('detect subdir file delete', function (done) {
 		deleteFile('someNewDir1/someNewfile2')
 		checkChanges(1, done)
+	})
 
-	test 'stop watching', ->
+	test('stop watching', function () {
 		watcher.close()
+	})
+}
 
-# Run tests for each method
-joe.describe 'watchr', (describe,test) ->
-	describe 'watch', (describe,test) ->
-		runTests({preferredMethods:['watch','watchFile']}, describe, test)
-	describe 'watchFile', (describe,test) ->
-		runTests({preferredMethods:['watchFile','watch']}, describe, test)
+// Run tests for each method
+joe.describe('watchr', function (describe) {
+	describe('watch', function (describe, test) {
+		runTests({preferredMethods: ['watch', 'watchFile']}, describe, test)
+	})
+	describe('watchFile', function (describe, test) {
+		runTests({preferredMethods: ['watchFile', 'watch']}, describe, test)
+	})
+})

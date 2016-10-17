@@ -1,109 +1,134 @@
-# Import
-extendr = require('extendr')
-extractOpts = require('extract-opts')
-fsUtil = require('safefs')
+// Import
+const extendr = require('extendr')
+const extractOpts = require('extract-opts')
+const fsUtil = require('safefs')
 
-# Define
-watchrUtil =
-	# Stat Changed
-	statChanged: (old, current) ->
-		# Has the file been deleted or created?
-		if old? isnt current?
+// Define
+const watchrUtil = {
+	// Stat Changed
+	statChanged (old, current) {
+		// Has the file been deleted or created?
+		const hasOld = old != null
+		const hasCurrent = current != null
+		if ( hasOld !== hasCurrent ) {
 			return true
+		}
 
-		# Has the file contents changed?
-		else if old? and current?
+		// Has the file contents changed?
+		else if ( hasOld && hasCurrent ) {
 			old = extendr.dereferenceJSON(old)
 			current = extendr.dereferenceJSON(current)
 
-			delete old.atime  if old.atime?
-			delete old.ctime  if old.ctime?
-			delete current.atime  if current.atime?
-			delete current.ctime  if current.ctime?
+			if ( old.atime != null )  delete old.atime
+			if ( old.ctime != null )  delete old.ctime
+			if ( current.atime != null )  delete current.atime
+			if ( current.ctime != null )  delete current.ctime
 
-			# The files contents have actually changed
-			if JSON.stringify(old) isnt JSON.stringify(current)
+			// The files contents have actually changed
+			if ( JSON.stringify(old) !== JSON.stringify(current) ) {
 				return true
+			}
 
-			# The files contents are the same
-			else
+			// The files contents are the same
+			else {
 				return false
+			}
 
-		# The file still does not exist
-		else
+		// The file still does not exist
+		}
+		else {
 			return false
+		}
+	},
 
-	# Try fsUtil.watch
-	# opts = {path, listener}
-	# next(err, success, 'watch', fswatcher)
-	watch: (opts, next) ->
-		# Prepare
+	// Try fsUtil.watch
+	// opts = {path, listener}
+	// next(err, success, 'watch', fswatcher)
+	watch (opts, next) {
+		// Prepare
 		[opts, next] = extractOpts(opts, next)
 
-		# Check
-		return next(null, false, 'watch')  unless fsUtil.watch?
+		// Check
+		if ( fsUtil.watch != null ) {
+			return next(null, false, 'watch')
+		}
 
-		# Watch
-		try
+		// Watch
+		let fswatcher = null
+		try {
 			fswatcher = fsUtil.watch(opts.path, opts.listener)
-			# must pass the listener here instead of doing fswatcher.on('change', opts.listener)
-			# as the latter is not supported on node 0.6 (only 0.8+)
-		catch err
+			// must pass the listener here instead of doing fswatcher.on('change', opts.listener)
+			// as the latter is not supported on node 0.6 (only 0.8+)
+		}
+		catch ( err ) {
 			return next(err, false, 'watch', fswatcher)
+		}
 
-		# Apply
+		// Apply
 		return next(null, true, 'watch', fswatcher)
+	},
 
-	# Try fsUtil.watchFile
-	# opts = {path, persistent?, interval?, listener}
-	# next(err, success, 'watchFile')
-	watchFile: (opts, next) ->
-		# Prepare
+	// Try fsUtil.watchFile
+	// opts = {path, persistent?, interval?, listener}
+	// next(err, success, 'watchFile')
+	watchFile (opts, next) {
+		// Prepare
 		[opts, next] = extractOpts(opts, next)
 
-		# Check
-		return next(null, false, 'watchFile')  unless fsUtil.watchFile?
+		// Check
+		if ( fsUtil.watchFile != null ) {
+			return next(null, false, 'watchFile')
+		}
 
-		# Watch
-		try
+		// Watch
+		try {
 			fsUtil.watchFile(opts.path, {persistent: opts.persistent, interval: opts.interval}, opts.listener)
-		catch err
+		}
+		catch ( err ) {
 			return next(err, false, 'watchFile')
+		}
 
-		# Apply
+		// Apply
 		return next(null, true, 'watchFile')
+	},
 
-	# Try one watch method first, then try the other
-	# opts = {path, methods?, parsistent?, interval?, listener}
-	# next(err, success, method, fswatcher?)
-	watchMethods: (opts, next) ->
-		# Prepare
+	// Try one watch method first, then try the other
+	// opts = {path, methods?, parsistent?, interval?, listener}
+	// next(err, success, method, fswatcher?)
+	watchMethods (opts, next) {
+		// Prepare
 		[opts, next] = extractOpts(opts, next)
 
-		# Prepare
-		opts.methods ?= ['watch', 'watchFile']
+		// Prepare
+		if ( opts.methods == null )  opts.methods = ['watch', 'watchFile']
 
-		# Preferences
-		methodOne = watchrUtil[opts.methods[0]]
-		methodTwo = watchrUtil[opts.methods[1]]
+		// Preferences
+		const methodOne = watchrUtil[opts.methods[0]]
+		const methodTwo = watchrUtil[opts.methods[1]]
 
-		# Try first
-		methodOne opts, (errOne, success, method, fswatcher) ->
-			# Move on if succeeded
-			return next(null, success, method, fswatcher)  if success
-			# Otherwise...
+		// Try first
+		methodOne(opts, function (errOne, success, method, fswatcher) {
+			// Move on if succeeded
+			if ( success )  return next(null, success, method, fswatcher)
+			// Otherwise...
 
-			# Try second
-			methodTwo opts, (errTwo, success, method, fswatcher) ->
-				# Move on if succeeded
-				return next(null, success, method, fswatcher)  if success
-				# Otherwise...
+			// Try second
+			methodTwo(opts, function (errTwo, success, method, fswatcher) {
+				// Move on if succeeded
+				if ( success )  return next(null, success, method, fswatcher)
+				// Otherwise...
 
-				# Log errors and fail
-				errCombined = new Error("Both watch methods failed on #{opts.path}:\n#{errOne.stack.toString()}\n#{errTwo.stack.toString()}")
+				// Log errors and fail
+				const errOneMessage = errOne && errOne.stack && errOne.stack.toString() || errOne
+				const errTwoMessage = errTwo && errTwo.stack && errTwo.stack.toString() || errTwo
+				const errCombined = new Error(`Both watch methods failed on ${opts.path}:\n${errOneMessage}\n${errTwoMessage}`)
 				return next(errCombined, false, null, fswatcher)
+			})
+		})
 
-		# Chain
-		return @
+		// Chain
+		return this
+	}
+}
 
 module.exports = watchrUtil

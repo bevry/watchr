@@ -60,7 +60,7 @@
     "url": "http://github.com/bevry/watchr.git"
   },
   "engines": {
-    "node": ">=0.12"
+    "node": ">=0.8"
   },
   "editions": [
     {

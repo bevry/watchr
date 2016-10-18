@@ -44,9 +44,12 @@ Better file system watching for Node.js
 
 <p>This package is published with the following editions:</p>
 
-<ul><li><code>watchr/src/lib/watchr.coffee</code> is Source + CoffeeScript + <a href="https://nodejs.org/dist/latest-v5.x/docs/api/modules.html" title="Node/CJS Modules">Require</a></li>
-<li><code>watchr</code> aliases <code>watchr/es5/lib/watchr.js</code></li>
-<li><code>watchr/es5/lib/watchr.js</code> is CoffeeScript Compiled JavaScript + ES5 + <a href="https://nodejs.org/dist/latest-v5.x/docs/api/modules.html" title="Node/CJS Modules">Require</a></li></ul>
+<ul><li><code>watchr</code> aliases <code>watchr/index.js</code></li>
+<li><code>watchr/index.js</code> is Source + <a href="https://babeljs.io/docs/learn-es2015/" title="ECMAScript Next">ESNext</a> + <a href="https://nodejs.org/dist/latest-v5.x/docs/api/modules.html" title="Node/CJS Modules">Require</a></li>
+<li><code>watchr</code> aliases <code>watchr/index.js</code></li>
+<li><code>watchr/index.js</code> is <a href="https://babeljs.io" title="The compiler for writing next generation JavaScript">Babel</a> Compiled + <a href="http://babeljs.io/docs/plugins/preset-es2015/" title="ECMAScript 2015">ES2015</a> + <a href="https://nodejs.org/dist/latest-v5.x/docs/api/modules.html" title="Node/CJS Modules">Require</a></li></ul>
+
+<p>Older environments may need <a href="https://babeljs.io/docs/usage/polyfill/" title="A polyfill that emulates missing ECMAScript environment features">Babel's Polyfill</a> or something similar.</p>
 
 <!-- /INSTALL -->
 
@@ -193,7 +196,8 @@ These amazing people have contributed code to this project:
 <li><a href="https://github.com/FredrikNoren">Fredrik Norén</a> — <a href="https://github.com/bevry/watchr/commits?author=FredrikNoren" title="View the GitHub contributions of Fredrik Norén on repository bevry/watchr">view contributions</a></li>
 <li><a href="https://github.com/robsonpeixoto">Robson Roberto Souza Peixoto</a> — <a href="https://github.com/bevry/watchr/commits?author=robsonpeixoto" title="View the GitHub contributions of Robson Roberto Souza Peixoto on repository bevry/watchr">view contributions</a></li>
 <li><a href="http://stuartk.com/">Stuart Knightley</a> — <a href="https://github.com/bevry/watchr/commits?author=Stuk" title="View the GitHub contributions of Stuart Knightley on repository bevry/watchr">view contributions</a></li>
-<li><a href="http://digitalocean.com">David Byrd</a> — <a href="https://github.com/bevry/watchr/commits?author=thebyrd" title="View the GitHub contributions of David Byrd on repository bevry/watchr">view contributions</a></li></ul>
+<li><a href="http://digitalocean.com">David Byrd</a> — <a href="https://github.com/bevry/watchr/commits?author=thebyrd" title="View the GitHub contributions of David Byrd on repository bevry/watchr">view contributions</a></li>
+<li><a href="https://github.com/jlevine22">Josh Levine</a> — <a href="https://github.com/bevry/watchr/commits?author=jlevine22" title="View the GitHub contributions of Josh Levine on repository bevry/watchr">view contributions</a></li></ul>
 
 <a href="https://github.com/bevry/watchr/blob/master/CONTRIBUTING.md#files">Discover how you can contribute by heading on over to the <code>CONTRIBUTING.md</code> file.</a>
 

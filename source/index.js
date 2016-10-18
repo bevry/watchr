@@ -487,14 +487,12 @@ class Watcher extends EventEmitter {
 					}
 
 					// Emit the event and note the change
-					this.log('debug', `watch determined create: ${childFileFullPath} via: ${this.path}`)
 					addTask('watch the new child', (complete) => {
 						this.log('debug', `watch determined create: ${childFileFullPath} via: ${this.path}`)
 						this.watchChild({
 							fullPath: childFileFullPath,
 							relativePath: childFileRelativePath
 						}, (err, childWatcher) => {
-							console.log('watched child', err)
 							if ( err )  return complete(err)
 							this.emit('change', 'create', childFileFullPath, childWatcher.stat, null)
 							return complete()

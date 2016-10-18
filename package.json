@@ -87,7 +87,6 @@
     }
   ],
   "main": "index.js",
-  "bin": "bin",
   "scripts": {
     "setup": "npm install",
     "clean": "rm -Rf ./docs ./es2015",
@@ -109,12 +108,10 @@
     "eachr": "^3.2.0",
     "editions": "^1.3.1",
     "extendr": "^3.2.2",
-    "extract-opts": "^3.3.1",
     "ignorefs": "^1.1.1",
     "safefs": "^4.1.0",
     "scandirectory": "^2.5.0",
-    "taskgroup": "^5.0.1",
-    "typechecker": "^4.3.0"
+    "taskgroup": "^5.0.1"
   },
   "devDependencies": {
     "assert-helpers": "^4.4.0",

@@ -9,13 +9,85 @@ const fsUtil = require('safefs')
 const ignorefs = require('ignorefs')
 const extendr = require('extendr')
 const eachr = require('eachr')
-const extractOpts = require('extract-opts')
-const typeChecker = require('typechecker')
 const {TaskGroup} = require('taskgroup')
 
 // Require the node.js event emitter
 // This provides us with the event system that we use for binding and trigger events
 const {EventEmitter} = require('events')
+
+
+const watchers = {}
+class Stalker extends EventEmitter {
+	constructor (path) {
+		super()
+		if ( watchers[path] == null ) {
+			watchers[path] = this.watcher = new Watcher(path)
+		}
+		else {
+			this.watcher = watchers[path]
+		}
+		if ( this.watcher.stalkers == null ) {
+			this.watcher.stalkers = []
+		}
+		this.watcher.stalkers.push(this)
+		this.watcher.once('close', () => {
+			this.remove()
+			watchers[path] = null
+		})
+		this.on('newListener', (eventName, listener) => this.watcher.on(eventName, listener))
+		this.on('removeListener', (eventName, listener) => this.watcher.removeListener(eventName, listener))
+	}
+
+	remove () {
+		const index = this.watcher.stalkers.indexOf(this)
+		if ( index !== -1 ) {
+			this.watcher.stalkers = this.watcher.stalkers.slice(0, index).concat(this.watcher.stalkers.slice(index + 1))
+		}
+		process.nextTick(() => {
+			this.removeAllListeners()
+		})
+		return this
+	}
+
+	close (reason) {
+		this.remove()
+		if ( reason === 'deleted' || this.watcher.stalkers.length === 0 ) {
+			this.watcher.close(reason || 'all stalkers are now gone')
+		}
+		return this
+	}
+
+	get path () {
+		return this.watcher.path
+	}
+
+	get stat () {
+		return this.watcher.stat
+	}
+
+	setConfig (...args) {
+		this.watcher.setConfig(...args)
+		return this
+	}
+
+	watch (...args) {
+		if ( args.length === 1 ) {
+			args.unshift({})
+		}
+		this.watcher.watch(...args)
+		return this
+	}
+}
+
+function open (path, changeListener, next) {
+	const stalker = new Stalker(path)
+	stalker.on('change', changeListener)
+	stalker.watch({}, next)
+}
+
+function create (...args) {
+	return new Stalker(...args)
+}
 
 /*
 Now to make watching files more convient and managed, we'll create a class which we can use to attach to each file.
@@ -27,79 +99,15 @@ Events:
 - `change` for listening to change events, receives the arguments `changeType, fullPath, currentStat, previousStat`
 */
 class Watcher extends EventEmitter {
-	// next(err, watcher)
-	// return watcher
-	static watch (opts, next) {
-		[opts, next] = extractOpts(opts, next)
-		const me = this || Watcher
-
-		// Prepare
-		if ( me.watchers == null )  me.watchers = {}
-
-		// Fetch
-		let watcher = me.watchers[opts.path]
-		if ( watcher ) {
-			watcher.setConfig(opts)
-			watcher.watch({}, next)
-			return watcher
-		}
-
-		// Create
-		watcher = me.watchers[opts.path] = new Watcher()
-		watcher.setConfig(opts)
-		watcher.once('close', function () {
-			me.watchers[opts.path] = null
-		})
-		watcher.watch({}, next)
-		return watcher
-	}
-
-	static statChanged (old, current) {
-		// Has the file been deleted or created?
-		const hasOld = old != null
-		const hasCurrent = current != null
-		if ( hasOld !== hasCurrent ) {
-			return true
-		}
-
-		// Has the file contents changed?
-		else if ( hasOld && hasCurrent ) {
-			old = extendr.dereferenceJSON(old)
-			current = extendr.dereferenceJSON(current)
-
-			if ( old.atime != null )  delete old.atime
-			if ( old.ctime != null )  delete old.ctime
-			if ( current.atime != null )  delete current.atime
-			if ( current.ctime != null )  delete current.ctime
-
-			// The files contents have actually changed
-			if ( JSON.stringify(old) !== JSON.stringify(current) ) {
-				return true
-			}
-
-			// The files contents are the same
-			else {
-				return false
-			}
-
-		// The file still does not exist
-		}
-		else {
-			return false
-		}
-	}
-
-	// Shortcut
-	get path () {
-		return this.config.path
-	}
-
 	// Now it's time to construct our watcher
 	// We give it a path, and give it some events to use
 	// Then we get to work with watching it
-	constructor () {
+	constructor (path) {
 		// Construct the EventEmitter
 		super()
+
+		// Apply the path, as this should never change after construction
+		this.path = path
 
 		// Our stat object, it contains things like change times, size, and is it a directory
 		this.stat = null
@@ -126,17 +134,6 @@ class Watcher extends EventEmitter {
 
 		// Initialize our object variables for our instance
 		this.config = {
-			// A single path to watch
-			path: null,
-
-			// Once listeners (optional, defaults to null)
-			// multiple event listeners, forwarded to this.once
-			once: null,
-
-			// When listeners (optional, defaults to null)
-			// multiple event listeners, forwarded to this.listen
-			on: null,
-
 			// Stat (optional, defaults to `null`)
 			// a file stat object to use for the path, instead of fetching a new one
 			stat: null,
@@ -144,12 +141,12 @@ class Watcher extends EventEmitter {
 			// Interval (optional, defaults to `5007`)
 			// for systems that poll to detect file changes, how often should it poll in millseconds
 			// if you are watching a lot of files, make this value larger otherwise you will have huge memory load
-			// only appliable to the `watchFile` watching method
+			// only applicable to the `watchFile` watching method
 			interval: 5007,
 
 			// Persistent (optional, defaults to `true`)
 			// whether or not we should keep the node process alive for as long as files are still being watched
-			// only appliable to the `watchFile` watching method
+			// only applicable to the `watchFile` watching method
 			persistent: true,
 
 			// Catchup Delay (optional, defaults to `1000`)
@@ -177,7 +174,7 @@ class Watcher extends EventEmitter {
 			// whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
 			ignoreCommonPatterns: true,
 
-			// Ignore Custom PAtterns (optional, defaults to `null`)
+			// Ignore Custom Patterns (optional, defaults to `null`)
 			// any custom ignore patterns that you would also like to ignore along with the common patterns
 			ignoreCustomPatterns: null
 		}
@@ -192,49 +189,6 @@ class Watcher extends EventEmitter {
 		if ( this.config.stat ) {
 			this.stat = this.config.stat
 			delete this.config.stat
-		}
-
-		// Add listener
-		const watchr = this
-		function addListener (eventName, listener, mode) {
-			watchr.removeListener(eventName, listener)
-			if ( mode === 'on' ) {
-				watchr.on(eventName, listener)
-			}
-			else if ( mode === 'once' ) {
-				watchr.once(eventName, listener)
-			}
-			else {
-				throw new Error('unknown listen mode')
-			}
-			watchr.log('debug', `added listener: ${mode} ${eventName} for ${watchr.path}`)
-		}
-		function addListeners (eventName, listeners, mode) {
-			eachr(listeners, function (listener) {
-				addListener(eventName, listener, mode)
-			})
-		}
-		function addMap (map, mode) {
-			eachr(map, function (listeners, eventName) {
-				// Array of event listeners
-				if ( typeChecker.isArray(listeners) ) {
-					addListeners(eventName, listeners, mode)
-				}
-				// Single event listener
-				else {
-					addListener(eventName, listeners, mode)
-				}
-			})
-		}
-
-		// Listeners
-		if ( this.config.once ) {
-			addMap(this.config.once, 'once')
-			delete this.config.once
-		}
-		if ( this.config.on ) {
-			addMap(this.config.on, 'on')
-			delete this.config.on
 		}
 
 		// Chain
@@ -377,29 +331,36 @@ class Watcher extends EventEmitter {
 		const tasks = this.listenerTasks = new TaskGroup(`listener tasks for ${this.path}`, {domain: false}).done(next)
 		tasks.addTask('check if the file still exists', (complete) => {
 			// Log
-			this.log('debug', `watch evaluating on: ${this.path}`)
+			this.log('debug', `watch evaluating on: ${this.path} [state: ${this.state}]`)
+
+			// Check if this is still needed
+			if ( this.state !== 'active' ) {
+				this.log('debug', `watch discarded on: ${this.path}`)
+				tasks.clearRemaining()
+				return complete()
+			}
 
 			// Check if the file still exists
 			fsUtil.exists(this.path, (exists) => {
-				// Apply local gobal property
-				const fileExists = exists
+				// Apply local global property
+				previousStat = this.stat
 
 				// If the file still exists, then update the stat
-				if ( fileExists === false ) {
+				if ( exists === false ) {
 					// Log
-					this.log('debug', `watch determined delete: ${this.path}`)
+					this.log('debug', `watch emit delete: ${this.path}`)
 
 					// Apply
-					this.close('deleted')
 					this.stat = null
+					this.close('deleted')
+					this.emit('change', 'delete', this.path, null, previousStat)
 
 					// Clear the remaining tasks, as they are no longer needed
 					tasks.clearRemaining()
 					return complete()
 				}
 
-				// Update the stat of the file
-				previousStat = this.stat
+				// Update the stat of the fil
 				this.getStat({reset: true}, (err, stat) => {
 					// Check
 					if ( err )  return complete(err)
@@ -407,27 +368,34 @@ class Watcher extends EventEmitter {
 					// Update
 					currentStat = stat
 
-					// If there is a new file at the same path as the old file, then recreate the watchr
-					if ( this.stat.birthtime.toString() !== previousStat.birthtime.toString() ) {
-						this.log('debug', `watch determined replaced: ${this.path}`, this.stat.birthtime, previousStat.birthtime)
-						return this.watch({reset: true}, complete)
-					}
-					// Otherwise it is the same file, so all done
-					else {
-						return complete()
-					}
+					// Complete
+					return complete()
 				})
 			})
 		})
 
-		tasks.addTask('check if the file has changed', () => {
-			// Check if it is the same
-			// as if it is, then nothing has changed, so ignore
-			if ( Watcher.statChanged(previousStat, currentStat) === false ) {
-				this.log('debug', `watch determined same: ${this.path}`, previousStat, currentStat)
+		tasks.addTask('check if the file has changed', (complete) => {
+			console.log({path: this.path, currentStat, previousStat})
 
-				// Clear the remaining tasks, as they are no longer needed
+			// Check if there is a different file at the same location
+			// If so, we will need to rewatch the location and the children
+			if ( currentStat.ino.toString() !== previousStat.ino.toString() ) {
+				this.log('debug', `watch found replaced: ${this.path}`, currentStat, previousStat)
+				// note this will close the entire tree of listeners and reinstate them
+				// however, as this is probably for a file, it is probably not that bad
+				return this.watch({reset: true}, complete)
+			}
+
+			// Check if the file or directory has been modified
+			if ( currentStat.mtime.toString() !== previousStat.mtime.toString() ) {
+				this.log('debug', `watch found modification: ${this.path}`, previousStat, currentStat)
+				return complete()
+			}
+
+			// Otherwise it is the same, and nothing is needed to be done
+			else {
 				tasks.clearRemaining()
+				return complete()
 			}
 		})
 
@@ -438,7 +406,7 @@ class Watcher extends EventEmitter {
 			// So let's check if we are a directory
 			if ( this.isDirectory() === false ) {
 				// If we are a file, lets simply emit the change event
-				this.log('debug', `watch determined update: ${this.path}`)
+				this.log('debug', `watch emit update: ${this.path}`)
 				this.emit('change', 'update', this.path, currentStat, previousStat)
 				return done()
 			}
@@ -454,7 +422,7 @@ class Watcher extends EventEmitter {
 				this.log('debug', `watch read dir: ${this.path}`, newFileRelativePaths)
 
 				// Find deleted files
-				eachr(this.children, (childWatcher, childFileRelativePath) => {
+				eachr(this.children, (child, childFileRelativePath) => {
 					// Skip if the file still exists
 					if ( newFileRelativePaths.indexOf(childFileRelativePath) !== -1 )  return
 
@@ -468,8 +436,10 @@ class Watcher extends EventEmitter {
 					}
 
 					// Emit the event and note the change
-					this.log('debug', `watch determined delete: ${childFileFullPath} via: ${this.path}`)
-					this.closeChild(childFileRelativePath, 'deleted')
+					this.log('debug', `watch emit delete: ${childFileFullPath} via: ${this.path}`)
+					const childPreviousStat = child.stat
+					child.close('deleted')
+					this.emit('change', 'delete', childFileFullPath, null, childPreviousStat)
 				})
 
 				// Find new files
@@ -489,12 +459,15 @@ class Watcher extends EventEmitter {
 					// Emit the event and note the change
 					addTask('watch the new child', (complete) => {
 						this.log('debug', `watch determined create: ${childFileFullPath} via: ${this.path}`)
-						this.watchChild({
+						if ( this.children[childFileRelativePath] != null ) {
+							return complete()  // this should never occur
+						}
+						const child = this.watchChild({
 							fullPath: childFileFullPath,
 							relativePath: childFileRelativePath
-						}, (err, childWatcher) => {
+						}, (err) => {
 							if ( err )  return complete(err)
-							this.emit('change', 'create', childFileFullPath, childWatcher.stat, null)
+							this.emit('change', 'create', childFileFullPath, child.stat, null)
 							return complete()
 						})
 					})
@@ -517,7 +490,7 @@ class Watcher extends EventEmitter {
 	As renamed files are a bit difficult we will want to close and delete all the watchers for all our children too
 	Essentially it is a self-destruct
 	*/
-	close (reason) {
+	close (reason = 'unknown reason') {
 		// Nothing to do? Already closed?
 		if ( this.state !== 'active' )  return this
 
@@ -525,45 +498,30 @@ class Watcher extends EventEmitter {
 		this.log('debug', `close: ${this.path}`)
 
 		// Close our children
-		eachr(this.children, (childWatcher, childRelativePath) => {
-			this.closeChild(childRelativePath, reason)
+		eachr(this.children, (child) => {
+			child.close(reason)
 		})
-
-		// Close watchFile listener
-		if ( this.method === 'watchFile' ) {
-			fsUtil.unwatchFile(this.path)
-		}
 
 		// Close watch listener
 		if ( this.fswatcher != null ) {
 			this.fswatcher.close()
 			this.fswatcher = null
 		}
+		else {
+			fsUtil.unwatchFile(this.path)
+		}
 
 		// Updated state
 		if ( reason === 'deleted' ) {
 			this.state = 'deleted'
-			this.emit('change', 'delete', this.path, null, this.stat)
-		}
-		else if ( reason === 'failure' ) {
-			this.state = 'closed'
-			this.log('warn', `Failed to watch the path ${this.path}`)
 		}
 		else {
 			this.state = 'closed'
 		}
 
 		// Emit our close event
+		this.log('debug', `watch closed because ${reason} on ${this.path}`)
 		this.emit('close', reason)
-
-		// Chain
-		return this
-	}
-
-	// Close a child
-	closeChild (fileRelativePath, reason) {
-		// Check
-		this.children[fileRelativePath].close(reason)
 
 		// Chain
 		return this
@@ -574,62 +532,45 @@ class Watcher extends EventEmitter {
 	Setup watching for a child
 	Bubble events of the child into our instance
 	Also instantiate the child with our instance's configuration where applicable
-	next(err, watchr)
+	next(err)
 	*/
 	watchChild (opts, next) {
 		// Prepare
 		const watchr = this
 
-		// Check if we are already watching
-		if ( this.children[opts.relativePath] ) {
-			// Provide the existing watcher
-			if ( next ) {
-				next(null, this.children[opts.relativePath])
-			}
-		}
-		else {
-			// Create a new watcher for the child
-			this.children[opts.relativePath] = Watcher.watch({
-				// Custom
-				path: opts.fullPath,
-				stat: opts.stat,
-				once: {
-					close () {
-						delete watchr.children[opts.relativePath]
-					}
-				},
-				on: {
-					log (...args) {
-						watchr.emit('log', ...args)
-					},
-					change (...args) {
-						const [changeType, path] = args
-						if ( changeType === 'delete' && path === opts.fullPath ) {
-							watchr.closeChild(opts.relativePath, 'deleted')
-						}
-						// bubble the change event up to us from the child
-						watchr.emit('change', ...args)
-					}
-				},
+		// Create the child
+		const child = create(opts.fullPath)
 
-				// Next
-				next,
+		// Apply the child
+		this.children[opts.relativePath] = child
 
-				// Inherit
-				interval: this.config.interval,
-				persistent: this.config.persistent,
-				catchupDelay: this.config.catchupDelay,
-				preferredMethods: this.config.preferredMethods,
-				ignorePaths: this.config.ignorePaths,
-				ignoreHiddenFiles: this.config.ignoreHiddenFiles,
-				ignoreCommonPatterns: this.config.ignoreCommonPatterns,
-				ignoreCustomPatterns: this.config.ignoreCustomPatterns,
-				followLinks: this.config.followLinks
-			})
-		}
+		// Add the extra listaeners
+		child.once('close', () => delete watchr.children[opts.relativePath])
+		child.on('log', (...args) => watchr.emit('log', ...args))
+		child.on('change', (...args) => watchr.emit('change', ...args))
 
-		// Return the watchr
-		return this.children[opts.relativePath]
+		// Add the extra configuration
+		child.setConfig({
+			// Custom
+			stat: opts.stat,
+
+			// Inherit
+			interval: this.config.interval,
+			persistent: this.config.persistent,
+			catchupDelay: this.config.catchupDelay,
+			preferredMethods: this.config.preferredMethods,
+			ignorePaths: this.config.ignorePaths,
+			ignoreHiddenFiles: this.config.ignoreHiddenFiles,
+			ignoreCommonPatterns: this.config.ignoreCommonPatterns,
+			ignoreCustomPatterns: this.config.ignoreCustomPatterns,
+			followLinks: this.config.followLinks
+		})
+
+		// Start the watching
+		child.watch(next)
+
+		// Return the child
+		return child
 	}
 
 	/*
@@ -664,9 +605,7 @@ class Watcher extends EventEmitter {
 					}
 
 					// Watch this child
-					watchr.watchChild({fullPath, relativePath}, function (err) {
-						return nextFile(err)
-					})
+					watchr.watchChild({fullPath, relativePath}, nextFile)
 				}
 			})
 
@@ -774,17 +713,12 @@ class Watcher extends EventEmitter {
 	If we are a directory, let's recurse
 	If we are deleted, then don't error but return the isWatching argument of our completion callback as false
 	Once watching has completed for this directory and all children, then emit the watching event
-	next(err, watchr)
+	next(err)
 	*/
 	watch (opts, next) {
-		// Add the listener
-		if ( next ) {
-			this.once('watching', next)
-		}
-
 		// Check
 		if ( this.state === 'active' && opts.reset !== true ) {
-			this.emit('watching', null, this)
+			next()
 			return this
 		}
 
@@ -796,17 +730,17 @@ class Watcher extends EventEmitter {
 
 		// Fetch the stat then try again
 		this.getStat({}, (err) => {
-			if ( err )  return this.emit('watching', err, this)
+			if ( err )  return next(err)
 
 			// Watch ourself
 			this.watchSelf({}, (err) => {
-				if ( err )  return this.emit('watching', err, this)
+				if ( err )  return next(err)
 
-				// Watch the childrne
+				// Watch the children
 				this.watchChildren({}, (err) => {
 					if ( err )  this.close('child failure')  // continue
 					this.log('debug', `watch done: ${this.path} ${err}`)
-					this.emit('watching', err, this)
+					return next(err)
 				})
 			})
 		})
@@ -818,4 +752,4 @@ class Watcher extends EventEmitter {
 
 // Now let's provide node.js with our public API
 // In other words, what the application that calls us has access to
-module.exports = Watcher
+module.exports = {open, create, Stalker, Watcher}

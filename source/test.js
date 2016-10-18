@@ -9,7 +9,7 @@ const extendr = require('extendr')
 const {equal} = require('assert-helpers')
 const {ok} = require('assert')
 const joe = require('joe')
-const {watch} = require('./index')
+const {create} = require('./index')
 
 // =====================================
 // Configuration
@@ -41,7 +41,7 @@ const writetree = {
 
 function runTests (opts, describe, test) {
 	// Prepare
-	let watcher = null
+	let stalker = null
 
 	// Change detection
 	let changes = []
@@ -104,22 +104,19 @@ function runTests (opts, describe, test) {
 	})
 
 	test('start watching', function (done) {
-		const config = extendr.extend({
+		stalker = create(fixturesPath)
+		stalker.on('log', console.log)
+		stalker.on('change', changeHappened)
+		stalker.setConfig(extendr.extend({
 			path: fixturesPath,
 			ignorePaths: [pathUtil.join(fixturesPath, 'a specific ignored file')],
-			ignoreHiddenFiles: true,
-			on: {
-				change: changeHappened,
-				log: console.log
-			},
-			next (err, _watcher) {
-				watcher = _watcher
-				wait(batchDelay, function () {
-					done(err)
-				})
-			}
-		}, opts)
-		watch(config)
+			ignoreHiddenFiles: true
+		}, opts))
+		stalker.watch((err) => {
+			wait(batchDelay, function () {
+				done(err)
+			})
+		})
 	})
 
 	test('detect write', function (done) {
@@ -193,7 +190,7 @@ function runTests (opts, describe, test) {
 	})
 
 	test('stop watching', function () {
-		watcher.close()
+		stalker.close()
 	})
 }
 

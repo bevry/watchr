@@ -24,15 +24,15 @@ function wait (delay, fn) {
 const batchDelay = 10 * 1000
 const fixturesPath = pathUtil.join(__dirname, '../test-output')
 const writetree = {
-	'a': 'a content',
-	'b': {
-		'b-a': 'b-a content',
-		'b-b': 'b-b content'
+	'a file': 'content of a file',
+	'a directory': {
+		'a sub file of a directory': 'content of a sub file of a directory',
+		'another sub file of a directory': 'content of another sub file of a directory'
 	},
-	'.c': {
-		'c-a': 'c-a content'
+	'.a hidden directory': {
+		'a sub file of a hidden directory': 'content of a sub file of a hidden directory'
 	},
-	'blah': 'blah content'
+	'a specific ignored file': 'content of a specific ignored file'
 }
 
 
@@ -69,18 +69,22 @@ function runTests (opts, describe, test) {
 
 	// Files changes
 	function writeFile (fileRelativePath) {
+		console.log('write:', fileRelativePath)
 		const fileFullPath = pathUtil.join(fixturesPath, fileRelativePath)
 		fsUtil.writeFileSync(fileFullPath, `${fileRelativePath} now has the random number ${Math.random()}`)
 	}
 	function deleteFile (fileRelativePath) {
+		console.log('delete:', fileRelativePath)
 		const fileFullPath = pathUtil.join(fixturesPath, fileRelativePath)
 		fsUtil.unlinkSync(fileFullPath)
 	}
 	function makeDir (fileRelativePath) {
+		console.log('make:', fileRelativePath)
 		const fileFullPath = pathUtil.join(fixturesPath, fileRelativePath)
 		fsUtil.mkdirSync(fileFullPath, '700')
 	}
 	function renameFile (fileRelativePath1, fileRelativePath2) {
+		console.log('rename:', fileRelativePath1, 'TO', fileRelativePath2)
 		const fileFullPath1 = pathUtil.join(fixturesPath, fileRelativePath1)
 		const fileFullPath2 = pathUtil.join(fixturesPath, fileRelativePath2)
 		fsUtil.renameSync(fileFullPath1, fileFullPath2)
@@ -102,7 +106,7 @@ function runTests (opts, describe, test) {
 	test('start watching', function (done) {
 		const config = extendr.extend({
 			path: fixturesPath,
-			ignorePaths: [pathUtil.join(fixturesPath, 'blah')],
+			ignorePaths: [pathUtil.join(fixturesPath, 'a specific ignored file')],
 			ignoreHiddenFiles: true,
 			on: {
 				change: changeHappened,
@@ -119,23 +123,23 @@ function runTests (opts, describe, test) {
 	})
 
 	test('detect write', function (done) {
-		writeFile('a')
-		writeFile('b/b-a')
+		writeFile('a file')
+		writeFile('a directory/a sub file of a directory')
 		checkChanges(2, done)
 	})
 
 	test('detect write ignored on hidden files', function (done) {
-		writeFile('.c/c-a')
+		writeFile('.a hidden directory/a sub file of a hidden directory')
 		checkChanges(0, done)
 	})
 
 	test('detect write ignored on ignored files', function (done) {
-		writeFile('blah')
+		writeFile('a specific ignored file')
 		checkChanges(0, done)
 	})
 
 	test('detect delete', function (done) {
-		deleteFile('b/b-b')
+		deleteFile('a directory/another sub file of a directory')
 		checkChanges(
 			1,
 			function (changes) {
@@ -150,41 +154,41 @@ function runTests (opts, describe, test) {
 	})
 
 	test('detect delete ignored on hidden files', function (done) {
-		deleteFile('.c/c-a')
+		deleteFile('.a hidden directory/a sub file of a hidden directory')
 		checkChanges(0, done)
 	})
 
 	test('detect delete ignored on ignored files', function (done) {
-		deleteFile('blah')
+		deleteFile('a specific ignored file')
 		checkChanges(0, done)
 	})
 
 	test('detect mkdir', function (done) {
-		makeDir('someNewDir1')
+		makeDir('a new directory')
 		checkChanges(1, done)
 	})
 
 	test('detect mkdir and write', function (done) {
-		writeFile('someNewfile1')
-		writeFile('someNewfile2')
-		writeFile('someNewfile3')
-		makeDir('someNewDir2')
+		writeFile('a new file')
+		writeFile('another new file')
+		writeFile('and another new file')
+		makeDir('another new directory')
 		checkChanges(4, done)
 	})
 
 	test('detect rename', function (done) {
-		renameFile('someNewfile1', 'someNewfilea')  // unlink, new
-		checkChanges(2, done)
+		renameFile('a new file', 'a new file that was renamed')
+		checkChanges(2, done)  // unlink, new
 	})
 
 	test('detect subdir file write', function (done) {
-		writeFile('someNewDir1/someNewfile1')
-		writeFile('someNewDir1/someNewfile2')
+		writeFile('a new directory/a new file of a new directory')
+		writeFile('a new directory/another new file of a new directory')
 		checkChanges(2, done)
 	})
 
 	test('detect subdir file delete', function (done) {
-		deleteFile('someNewDir1/someNewfile2')
+		deleteFile('a new directory/another new file of a new directory')
 		checkChanges(1, done)
 	})
 

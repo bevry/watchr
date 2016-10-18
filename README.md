@@ -100,9 +100,6 @@ stalker.once('close', function (reason) {
 	console.log('closed', path, 'because', reason)
 })
 stalker.setConfig({
-	// The completion callback, which we'll use the one from earlier
-	next: next,
-
 	// Stat (optional, defaults to `null`)
 	// A stat object for the path if we already have one, otherwise it will be fetched for us
 	stat: null,

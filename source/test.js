@@ -6,22 +6,23 @@ const fsUtil = require('fs')
 const balUtil = require('bal-util')
 const rimraf = require('rimraf')
 const extendr = require('extendr')
-const assert = require('assert-helpers')
+const {equal} = require('assert-helpers')
+const {ok} = require('assert')
 const joe = require('joe')
-const watchr = require('./index')
+const {watch} = require('./index')
 
 // =====================================
 // Configuration
 
 // Helpers
 function wait (delay, fn) {
+	console.log(`completed, waiting for ${delay}ms delay...`)
 	return setTimeout(fn, delay)
 }
 
 // Test Data
-const debug = /* process.env.TRAVIS_NODE_VERSION || */ true
 const batchDelay = 10 * 1000
-const outPath = pathUtil.join(__dirname, '../../test/out')
+const fixturesPath = pathUtil.join(__dirname, '../test-output')
 const writetree = {
 	'a': 'a content',
 	'b': {
@@ -53,7 +54,7 @@ function runTests (opts, describe, test) {
 			if ( changes.length !== expectedChanges ) {
 				console.log(changes)
 			}
-			assert.equal(changes.length, expectedChanges, `${changes.length} changes ran out of ${expectedChanges} changes`)
+			equal(changes.length, expectedChanges, `${changes.length} changes ran out of ${expectedChanges} changes`)
 			if ( extraTest ) {
 				extraTest(changes)
 			}
@@ -63,59 +64,58 @@ function runTests (opts, describe, test) {
 	}
 	function changeHappened (...args) {
 		changes.push(args)
-		if ( debug ) {
-			console.log(`a watch event occured: ${changes.length}`, args)
-		}
+		console.log(`a watch event occured: ${changes.length}`, args)
 	}
 
 	// Files changes
 	function writeFile (fileRelativePath) {
-		const fileFullPath = pathUtil.join(outPath, fileRelativePath)
+		const fileFullPath = pathUtil.join(fixturesPath, fileRelativePath)
 		fsUtil.writeFileSync(fileFullPath, `${fileRelativePath} now has the random number ${Math.random()}`)
 	}
 	function deleteFile (fileRelativePath) {
-		const fileFullPath = pathUtil.join(outPath, fileRelativePath)
+		const fileFullPath = pathUtil.join(fixturesPath, fileRelativePath)
 		fsUtil.unlinkSync(fileFullPath)
 	}
 	function makeDir (fileRelativePath) {
-		const fileFullPath = pathUtil.join(outPath, fileRelativePath)
+		const fileFullPath = pathUtil.join(fixturesPath, fileRelativePath)
 		fsUtil.mkdirSync(fileFullPath, '700')
 	}
 	function renameFile (fileRelativePath1, fileRelativePath2) {
-		const fileFullPath1 = pathUtil.join(outPath, fileRelativePath1)
-		const fileFullPath2 = pathUtil.join(outPath, fileRelativePath2)
+		const fileFullPath1 = pathUtil.join(fixturesPath, fileRelativePath1)
+		const fileFullPath2 = pathUtil.join(fixturesPath, fileRelativePath2)
 		fsUtil.renameSync(fileFullPath1, fileFullPath2)
 	}
 
 	// Tests
 	test('remove old test files', function (done) {
-		rimraf(outPath, function (err) {
+		rimraf(fixturesPath, function (err) {
 			done(err)
 		})
 	})
 
 	test('write new test files', function (done) {
-		balUtil.writetree(outPath, writetree, function (err) {
+		balUtil.writetree(fixturesPath, writetree, function (err) {
 			done(err)
 		})
 	})
 
 	test('start watching', function (done) {
-		watchr.watch(extendr.extend({
-			path: outPath,
-			listener: changeHappened,
-			ignorePaths: [pathUtil.join(outPath, 'blah')],
+		const config = extendr.extend({
+			path: fixturesPath,
+			ignorePaths: [pathUtil.join(fixturesPath, 'blah')],
 			ignoreHiddenFiles: true,
-			outputLog: debug,
+			on: {
+				change: changeHappened,
+				log: console.log
+			},
 			next (err, _watcher) {
 				watcher = _watcher
 				wait(batchDelay, function () {
 					done(err)
 				})
 			}
-		}, opts)).on('error', function (err) {
-			console.log(err, err && err.stack)
-		})
+		}, opts)
+		watch(config)
 	})
 
 	test('detect write', function (done) {
@@ -143,7 +143,7 @@ function runTests (opts, describe, test) {
 				if ( !changes[0][3] ) {
 					console.log(changes[0])
 				}
-				assert.ok(changes[0][3], 'previous stat not given to delete')
+				ok(changes[0][3], 'previous stat not given to delete')
 			},
 			done
 		)

@@ -1,6 +1,6 @@
 {
   "name": "watchr",
-  "version": "2.7.0",
+  "version": "3.0.0",
   "description": "Better file system watching for Node.js",
   "homepage": "https://github.com/bevry/watchr",
   "license": "MIT",
@@ -120,6 +120,7 @@
     "babel-cli": "^6.16.0",
     "babel-preset-es2015": "^6.16.0",
     "bal-util": "^2.6.0",
+    "documentation": "^4.0.0-beta11",
     "eslint": "^2.13.1",
     "joe": "^1.8.0",
     "joe-reporter-console": "^1.2.1",

@@ -13,14 +13,6 @@ watchr.watch({
 		error (err) {
 			console.log('an error occured:', err)
 		},
-		watching (err, watcherInstance) {
-			if (err) {
-				console.log(`watching the path ${watcherInstance.path} failed with error`, err)
-			}
-			else {
-				console.log(`watching the path ${watcherInstance.path} completed`)
-			}
-		},
 		change (...args) {
 			console.log('a change event occured:', args)
 		}

@@ -97,6 +97,7 @@ stalker.on('change', listener)
 stalker.on('log', console.log)
 stalker.once('close', function (reason) {
 	console.log('closed', path, 'because', reason)
+	stalker.removeAllListeners()  // as it is closed, no need for our change or log listeners any more
 })
 stalker.setConfig({
 	// Stat (optional, defaults to `null`)

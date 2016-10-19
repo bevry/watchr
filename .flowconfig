@@ -1,8 +1,8 @@
-# 2016 September 15
+# 2016 October 10
 # https://github.com/bevry/base
 [ignore]
 .*/docs/.*
-<PROJECT_ROOT>/node_modules/caterpillar/source/.*
+.*/caterpillar/source/.*
 
 [options]
 module.ignore_non_literal_requires=true

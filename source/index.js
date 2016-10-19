@@ -67,6 +67,29 @@ function errorToString (error /* :Error */) {
 }
 
 /**
+Alias for creating a new {@link Stalker} with some basic configuration
+@access public
+@param {string} path - the path to watch
+@param {function} changeListener - the change listener for {@link Watcher}
+@param {function} next - the completion callback for {@link Watcher#watch}
+@returns {this}
+*/
+function open (path /* :string */, changeListener /* :function */, next /* :function */) {
+	const stalker = new Stalker(path)
+	stalker.on('change', changeListener)
+	stalker.watch({}, next)
+}
+
+/**
+Alias for creating a new {@link Stalker}
+@access public
+@returns {this}
+*/
+function create (...args /* :Array<any> */) {
+	return new Stalker(...args)
+}
+
+/**
 Stalker
 A watcher of the watchers
 @protected
@@ -165,29 +188,6 @@ class Stalker extends EventEmitter {
 		this.watcher.watch(...args)
 		return this
 	}
-}
-
-/**
-Alias for creating a new {@link Stalker} with some basic configuration
-@access public
-@param {string} path - the path to watch
-@param {function} changeListener - the change listener for {@link Watcher}
-@param {function} next - the completion callback for {@link Watcher#watch}
-@returns {this}
-*/
-function open (path /* :string */, changeListener /* :function */, next /* :function */) {
-	const stalker = new Stalker(path)
-	stalker.on('change', changeListener)
-	stalker.watch({}, next)
-}
-
-/**
-Alias for creating a new {@link Stalker}
-@access public
-@returns {this}
-*/
-function create (...args /* :Array<any> */) {
-	return new Stalker(...args)
 }
 
 /**

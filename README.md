@@ -51,6 +51,8 @@ Watchr provides a normalised API the file watching APIs of different node versio
 
 ## Usage
 
+[API Documentation](http://rawgit.com/bevry/watchr/master/docs/index.html)
+
 There are two concepts in watchr, they are:
 
 - Watcher - this wraps the native file system watching, makes it reliable, and supports deep watching
@@ -96,7 +98,7 @@ More advanced usage is:
 var stalker = watchr.create(path)
 
 // Listen to the events for the stalker/watcher
-// http://rawgit.com/bevry/watchr/master/docs/#watcher
+// http://rawgit.com/bevry/watchr/master/docs/index.html#watcher
 stalker.on('change', listener)
 stalker.on('log', console.log)
 stalker.once('close', function (reason) {
@@ -105,7 +107,7 @@ stalker.once('close', function (reason) {
 })
 
 // Set the default configuration for the stalker/watcher
-// http://rawgit.com/bevry/watchr/master/docs/#Watcher%23setConfig
+// http://rawgit.com/bevry/watchr/master/docs/index.html#Watcher%23setConfig
 stalker.setConfig({
 	stat: null,
 	interval: 5007,

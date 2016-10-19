@@ -1,13 +1,11 @@
 # History
 
-## v3.0.0 Unreleased
+## v3.0.0 2016 October 19
 - Rewrote for better stability, all issues should now be considered closed
 - Converted from CoffeeScript to JavaScript
 - Node v0.8 support added once again (before node v0.12 was the earliest supported version)
-- Still todo:
-	- Add jsdoc
-	- Add flow type (optional)
-	- Consider unification of `readdir` in listener and `scandirectory` functionality in watch
+- Added jsdoc
+- Added flow type annotations
 
 ## v2.6.0 2016 July 15
 - Potentially fixed swapfiles breaking watching

@@ -134,7 +134,7 @@
     "flow-bin": "^0.33.0",
     "joe": "^1.8.0",
     "joe-reporter-console": "^1.2.1",
-    "projectz": "^1.2.0",
+    "projectz": "^1.3.0",
     "rimraf": "^2.5.4"
   }
 }

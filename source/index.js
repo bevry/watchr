@@ -54,27 +54,32 @@ type WatcherConfig = {
 	catchupDelay: number,
 	preferredMethods: Array<MethodEnum>,
 	followLinks: boolean,
-	ignorePaths: boolean,
+	ignorePaths: false | Array<string>,
 	ignoreHiddenFiles: boolean,
 	ignoreCommonPatterns: boolean,
 	ignoreCustomPatterns: ?RegExp
 }
 */
 
+// Helper for error logging
 function errorToString (error /* :Error */) {
 	return error.stack.toString() || error.message || error.toString()
 }
 
 /**
-Stalker - A watcher of the watchers
-@constructor
-@class Stalker
-@extends EventEmitter
-@access public
+Stalker
+A watcher of the watchers
+@protected
+@property {Object} watchers - static collection of all the watchers mapped by path
+@property {Watcher} watcher - the associated watcher for this stalker
 */
 class Stalker extends EventEmitter {
 	/* :: static watchers: {[key:string]: Watcher} */
 	/* :: watcher: Watcher */
+
+	/**
+	@param {string} path - the path to watch
+	*/
 	constructor (path /* :string */) {
 		super()
 
@@ -100,6 +105,11 @@ class Stalker extends EventEmitter {
 		this.on('removeListener', (eventName, listener) => this.watcher.removeListener(eventName, listener))
 	}
 
+	/**
+	Cleanly shutdown the stalker
+	@private
+	@returns {this}
+	*/
 	remove () {
 		// Remove our stalker from the watcher
 		const index = this.watcher.stalkers.indexOf(this)
@@ -116,6 +126,12 @@ class Stalker extends EventEmitter {
 		return this
 	}
 
+	/**
+	Close the stalker, and if it is the last stalker for the path, close the watcher too
+	@access public
+	@param {string} [reason] - optional reason to provide for closure
+	@returns {this}
+	*/
 	close (reason /* :?string */) {
 		// Remove our stalker
 		this.remove()
@@ -130,35 +146,72 @@ class Stalker extends EventEmitter {
 		return this
 	}
 
+	/**
+	Alias for {@link Watcher#setConfig}
+	@access public
+	@returns {this}
+	*/
 	setConfig (...args /* :Array<any> */) {
 		this.watcher.setConfig(...args)
 		return this
 	}
 
+	/**
+	Alias for {@link Watcher#watch}
+	@access public
+	@returns {this}
+	*/
 	watch (...args /* :Array<any> */) {
 		this.watcher.watch(...args)
 		return this
 	}
 }
 
+/**
+Alias for creating a new {@link Stalker} with some basic configuration
+@access public
+@param {string} path - the path to watch
+@param {function} changeListener - the change listener for {@link Watcher}
+@param {function} next - the completion callback for {@link Watcher#watch}
+@returns {this}
+*/
 function open (path /* :string */, changeListener /* :function */, next /* :function */) {
 	const stalker = new Stalker(path)
 	stalker.on('change', changeListener)
 	stalker.watch({}, next)
 }
 
+/**
+Alias for creating a new {@link Stalker}
+@access public
+@returns {this}
+*/
 function create (...args /* :Array<any> */) {
 	return new Stalker(...args)
 }
 
-/*
-Now to make watching files more convient and managed, we'll create a class which we can use to attach to each file.
-It'll provide us with the API and abstraction we need to accomplish difficult things like recursion.
-We'll also store a global store of all the watchers and their paths so we don't have multiple watchers going at the same time
-for the same file - as that would be quite ineffecient.
-Events:
-- `close` for when the watcher stops watching
-- `change` for listening to change events, receives the arguments `changeType, fullPath, currentStat, previousStat`
+/**
+Watcher
+Watches a path and if its a directory, its children too, and emits change events for updates, deletions, and creations
+
+Available events:
+
+- `log(logLevel, ...args)` - emitted for debugging, child events are bubbled up
+- `close(reason)` - the watcher has been closed, perhaps for a reason
+- `change('update', fullPath, currentStat, previousStat)` - an update event has occured on the `fullPath`
+- `change('delete', fullPath, currentStat)` - an delete event has occured on the `fullPath`
+- `change('create', fullPath, null, previousStat)` - a create event has occured on the `fullPath`
+
+@protected
+@property {Array<Stalker>} stalkers - the associated stalkers for this watcher
+@property {string} path - the path to be watched
+@property {Stats} stat - the stat object for the path
+@property {FSWatcher} fswatcher - if the `watch` method was used, this is the FSWatcher instance for it
+@property {Object} children - a (relativePath => stalker) mapping of children
+@property {string} state - the current state of this watcher
+@property {TaskGroup} listenerTaskGroup - the TaskGroup instance for queuing listen events
+@property {number} listenerTimeout - the timeout result for queuing listen events
+@property {Object} config - the configuration options
 */
 class Watcher extends EventEmitter {
 	/* :: stalkers: Array<Stalker> */
@@ -168,93 +221,56 @@ class Watcher extends EventEmitter {
 	/* :: fswatcher: null | FSWatcher */
 	/* :: children: {[path:string]: Stalker} */
 	/* :: state: StateEnum */
-	/* :: method: null | MethodEnum */
 	/* :: listenerTaskGroup: null | TaskGroup */
 	/* :: listenerTimeout: null | number */
 	/* :: config: WatcherConfig */
 
-	// Now it's time to construct our watcher
-	// We give it a path, and give it some events to use
-	// Then we get to work with watching it
+	/**
+	@param {string} path - the path to watch
+	*/
 	constructor (path /* :string */) {
 		// Construct the EventEmitter
 		super()
 
-		// Apply the path, as this should never change after construction
+		// Initialise properties
 		this.path = path
-
-		// Our stat object, it contains things like change times, size, and is it a directory
 		this.stat = null
-
-		// The node.js file watcher instance, we have to open and close this, it is what notifies us of the events
 		this.fswatcher = null
-
-		// The watchers for the children of this watcher will go here
-		// This is for when we are watching a directory, we will scan the directory and children go here
 		this.children = {}
-
-		// We have to store the current state of the watcher and it is asynchronous (things can fire in any order)
-		// as such, we don't want to be doing particular things if this watcher is deactivated
-		// valid states are: pending, active, closed, deleted
 		this.state = 'pending'
-
-		// The method we will use to watch the files
-		// Preferably we use watchFile, however we may need to use watch in case watchFile doesn't exist (e.g. windows)
-		this.method = null
-
-		// Things for this.listener
 		this.listenerTaskGroup = null
 		this.listenerTimeout = null
 
-		// Initialize our object variables for our instance
+		// Initialize our configurable properties
 		this.config = {
-			// Stat (optional, defaults to `null`)
-			// a file stat object to use for the path, instead of fetching a new one
 			stat: null,
-
-			// Interval (optional, defaults to `5007`)
-			// for systems that poll to detect file changes, how often should it poll in millseconds
-			// if you are watching a lot of files, make this value larger otherwise you will have huge memory load
-			// only applicable to the `watchFile` watching method
 			interval: 5007,
-
-			// Persistent (optional, defaults to `true`)
-			// whether or not we should keep the node process alive for as long as files are still being watched
-			// only applicable to the `watchFile` watching method
 			persistent: true,
-
-			// Catchup Delay (optional, defaults to `1000`)
-			// Because of swap files, the original file may be deleted, and then over-written with by moving a swap file in it's place
-			// Without a catchup delay, we would report the original file's deletion, and ignore the swap file changes
-			// With a catchup delay, we would wait until there is a pause in events, then scan for the correct changes
-			catchupDelay: 2 * 1000,
-
-			// Preferred Methods (optional, defaults to `['watch','watchFile']`)
-			// In which order should use the watch methods when watching the file
+			catchupDelay: 2000,
 			preferredMethods: ['watch', 'watchFile'],
-
-			// Follow symlinks, i.e. use stat rather than lstat. (optional, default to `true`)
 			followLinks: true,
-
-			// Ignore Paths (optional, defaults to `false`)
-			// array of paths that we should ignore
 			ignorePaths: false,
-
-			// Ignore Hidden Files (optional, defaults to `false`)
-			// whether or not to ignored files which filename starts with a `.`
 			ignoreHiddenFiles: false,
-
-			// Ignore Common Patterns (optional, defaults to `true`)
-			// whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
 			ignoreCommonPatterns: true,
-
-			// Ignore Custom Patterns (optional, defaults to `null`)
-			// any custom ignore patterns that you would also like to ignore along with the common patterns
 			ignoreCustomPatterns: null
 		}
 	}
 
-	// Set our configuration
+	/**
+	Configure out Watcher
+	@param {Object} opts - the configuration to use
+	@param {Stats} [opts.stat] - A stat object for the path if we already have one, otherwise it will be fetched for us
+	@param {number} [opts.interval=5007] - If the `watchFile` method was used, this is the interval to use for change detection if polling is needed
+	@param {boolean} [opts.persistent=true] - If the `watchFile` method was used, this is whether or not watching should keep the node process alive while active
+	@param {number} [opts.catchupDelay=2000] - This is the delay to wait after a change event to be able to detect swap file changes accurately (without a delay, swap files trigger a delete and creation event, with a delay they trigger a single update event)
+	@param {Array<string>} [opts.preferredMethods=['watch', 'watchFile']] - The order of watch methods to attempt, if the first fails, move onto the second
+	@param {boolean} [opts.followLinks=true] - If true, will use `fs.stat` instead of `fs.lstat`
+	@param {Array<string>} [opts.ignorePaths=false] - Array of paths that should be ignored
+	@param {boolean} [opts.ignoreHiddenFiles=false] - Whether to ignore files and directories that begin with a `.`
+	@param {boolean} [opts.ignoreCommonPatterns=false] - Whether to ignore common undesirable paths (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
+	@param {RegExp} [opts.ignoreCustomPatterns] - A regular expression that if matched again the path will ignore the path
+	@returns {this}
+	*/
 	setConfig (opts /* :WatcherOpts */) {
 		// Apply
 		extendr.extend(this.config, opts)
@@ -269,7 +285,11 @@ class Watcher extends EventEmitter {
 		return this
 	}
 
-	// Log
+	/**
+	Emit a log event with the given arguments
+	@param {Array<*>} args
+	@returns {this}
+	*/
 	log (...args /* :Array<any> */) {
 		// Emit the log event
 		this.emit('log', ...args)
@@ -278,36 +298,43 @@ class Watcher extends EventEmitter {
 		return this
 	}
 
-	// Get Ignored Options
-	getIgnoredOptions (opts /* :IgnoreOpts */ = {}) {
+	/**
+	Fetch the ignored configuration options into their own object
+	@private
+	@returns {Object}
+	*/
+	getIgnoredOptions () {
 		// Return the ignore options
 		return {
-			ignorePaths: opts.ignorePaths != null
-				? opts.ignorePaths
-				: this.config.ignorePaths,
-			ignoreHiddenFiles: opts.ignoreHiddenFiles != null
-				? opts.ignoreHiddenFiles
-				: this.config.ignoreHiddenFiles,
-			ignoreCommonPatterns: opts.ignoreCommonPatterns != null
-				? opts.ignoreCommonPatterns
-				: this.config.ignoreCommonPatterns,
-			ignoreCustomPatterns: opts.ignoreCustomPatterns != null
-				? opts.ignoreCustomPatterns
-				: this.config.ignoreCustomPatterns
+			ignorePaths: this.config.ignorePaths,
+			ignoreHiddenFiles: this.config.ignoreHiddenFiles,
+			ignoreCommonPatterns: this.config.ignoreCommonPatterns,
+			ignoreCustomPatterns: this.config.ignoreCustomPatterns
 		}
 	}
 
-	// Is Ignored Path
-	isIgnoredPath (path /* :string */, opts /* :IgnoreOpts */ = {}) {
+	/**
+	Check whether or not a path should be ignored or not based on our current configuration options
+	@private
+	@param {String} path - the path (likely of a child)
+	@returns {boolean}
+	*/
+	isIgnoredPath (path /* :string */) {
 		// Ignore?
-		const ignore = ignorefs.isIgnoredPath(path, this.getIgnoredOptions(opts))
+		const ignore = ignorefs.isIgnoredPath(path, this.getIgnoredOptions())
 
 		// Return
 		return ignore
 	}
 
-	// Get the stat object
-	// next(err, stat)
+	/**
+	Get the stat for the path of the watcher
+	If the stat already exists and `opts.reset` is `false`, then just use the current stat, otherwise fetch a new stat and apply it to the watcher
+	@param {Object} opts
+	@param {boolean} [opts.reset=false]
+	@param  {function} next - completion callback with signature `error:?Error, stat?:Stats`
+	@returns {this}
+	*/
 	getStat (opts /* :ResetOpts */, next /* :StatCallback */) {
 		// Figure out what stat method we want to use
 		const method = this.config.followLinks ? 'stat' : 'lstat'
@@ -328,25 +355,25 @@ class Watcher extends EventEmitter {
 		return this
 	}
 
-	/*
-	Listener
-	A change event has fired
+	/**
+	Watch and WatchFile Listener
+	The listener attached to the `watch` and `watchFile` watching methods.
 
 	Things to note:
-	- watchFile method
-		- Arguments
+	- `watchFile` method:
+		- Arguments:
 			- currentStat - the updated stat of the changed file
 				- Exists even for deleted/renamed files
 			- previousStat - the last old stat of the changed file
 				- Is accurate, however we already have this
 		- For renamed files, it will will fire on the directory and the file
-	- watch method
-		- Arguments
+	- `watch` method:
+		- Arguments:
 			- eventName - either 'rename' or 'change'
 				- THIS VALUE IS ALWAYS UNRELIABLE AND CANNOT BE TRUSTED
 			- filename - child path of the file that was triggered
 				- This value can also be unrealiable at times
-	- Both methods
+	- both methods:
 		- For deleted and changed files, it will fire on the file
 		- For new files, it will fire on the directory
 
@@ -358,6 +385,13 @@ class Watcher extends EventEmitter {
 	In the future we will add:
 	- for renamed files: 'rename', fullPath, currentStat, previousStat, newFullPath
 	- rename is possible as the stat.ino is the same for the delete and create
+
+	@private
+	@param {Object} opts
+	@param {string} [opts.method] - the watch method that was used
+	@param {Array<*>} [opts.args] - the arguments from the watching method
+	@param {function} [next] - the optional completion callback with the signature `(error:?Error)`
+	@returns {this}
 	*/
 	listener (opts /* :ListenerOpts */, next /* ::?:ErrorCallback */) {
 		// Prepare
@@ -565,13 +599,13 @@ class Watcher extends EventEmitter {
 		return this
 	}
 
-	/*
-	Close
-	We will need something to close our listener for removed or renamed files
-	As renamed files are a bit difficult we will want to close and delete all the watchers for all our children too
-	Essentially it is a self-destruct
+	/**
+	Close the watching abilities of this watcher and its children if it has any
+	And mark the state as deleted or closed, dependning on the reason
+	@param {string} [reason='unknown']
+	@returns {this}
 	*/
-	close (reason /* :string */ = 'unknown reason') {
+	close (reason /* :string */ = 'unknown') {
 		// Nothing to do? Already closed?
 		if ( this.state !== 'active' )  return this
 
@@ -608,12 +642,17 @@ class Watcher extends EventEmitter {
 		return this
 	}
 
-	/*
-	Watch Child
-	Setup watching for a child
-	Bubble events of the child into our instance
-	Also instantiate the child with our instance's configuration where applicable
-	next(err)
+	/**
+	Create the child watcher/stalker for a given sub path of this watcher with inherited configuration
+	Once created, attach it to `this.children` and bubble `log` and `change` events
+	If the child closes, then delete it from `this.children`
+	@private
+	@param {Object} opts
+	@param {string} opts.fullPath
+	@param {string} opts.relativePath
+	@param {Stats} [opts.stat]
+	@param {function} next - completion callback with signature `error:?Error`
+	@returns {this}
 	*/
 	watchChild (opts /* :WatchChildOpts */, next /* :ErrorCallback */) /* :Stalker */ {
 		// Prepare
@@ -654,9 +693,12 @@ class Watcher extends EventEmitter {
 		return child
 	}
 
-	/*
-	Watch Children
-	next(err)
+	/**
+	Read the directory at our given path and watch each child
+	@private
+	@param {Object} opts - not currently used
+	@param {function} next - completion callback with signature `error:?Error`
+	@returns {this}
 	*/
 	watchChildren (opts /* :Object */, next /* :ErrorCallback */) {
 		// Prepare
@@ -705,8 +747,13 @@ class Watcher extends EventEmitter {
 		return this
 	}
 
-	// Setup the methods
-	// next(err)
+	/**
+	Setup the watching using the specified method
+	@private
+	@param {string} method
+	@param {function} next - completion callback with signature `error:?Error`
+	@returns {void}
+	*/
 	watchMethod (method /* :MethodEnum */, next /* :ErrorCallback */) /* :void */ {
 		if ( method === 'watch' ) {
 			// Check
@@ -762,9 +809,14 @@ class Watcher extends EventEmitter {
 		}
 	}
 
-	/*
-	Watch Self
-	next(err)
+	/**
+	Setup watching for our path, in the order of the preferred methods
+	@private
+	@param {Object} opts
+	@param {Array<Error>} [opts.errors] - the current errors that we have received attempting the preferred methods
+	@param {Array<string>} [opts.preferredMethods] - fallback to the configuration if not specified
+	@param {function} next - completion callback with signature `error:?Error`
+	@returns {this}
 	*/
 	watchSelf (opts /* :WatchSelfOpts */, next /* :ErrorCallback */) {
 		// Prepare
@@ -786,7 +838,6 @@ class Watcher extends EventEmitter {
 				}
 
 				// Apply
-				this.method = method
 				this.state = 'active'
 
 				// Forward
@@ -803,19 +854,20 @@ class Watcher extends EventEmitter {
 		return this
 	}
 
-	/*
-	Watch
-	Setup the native watching handlers for our path so we can receive updates on when things happen
-	If the next argument has been received, then add it is a once listener for the watching event
-	If we are already watching this path then let's start again (call close)
-	If we are a directory, let's recurse
-	If we are deleted, then don't error but return the isWatching argument of our completion callback as false
-	Once watching has completed for this directory and all children, then emit the watching event
-	next(err)
+	/**
+	Setup watching for our path, and our children
+	If we are already watching and `opts.reset` is not `true` then all done
+	Otherwise, close the current watchers for us and the children via {@link Watcher#close} and setup new ones
+	@public
+	@param {Object} [opts]
+	@param {boolean} [opts.reset=false] - should we always close existing watchers and setup new watchers
+	@param {function} next - completion callback with signature `error:?Error`
+	@param {Array<*>} args - ignore this argument, it is used just to handle the optional `opts` argument
+	@returns {this}
 	*/
 	watch (...args /* :Array<any> */) {
 		// Handle overloaded signature
-		let opts /* :{reset?: boolean} */, next /* :(err:?Error) => void */
+		let opts /* :ResetOpts */, next /* :ErrorCallback */
 		if ( args.length === 1 ) {
 			opts = {}
 			next = args[0]

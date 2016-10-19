@@ -92,59 +92,37 @@ stalker.close()
 More advanced usage is:
 
 ``` javascript
+// Create the stalker for the path
 var stalker = watchr.create(path)
+
+// Listen to the events for the stalker/watcher
+// http://rawgit.com/bevry/watchr/master/docs/#watcher
 stalker.on('change', listener)
 stalker.on('log', console.log)
 stalker.once('close', function (reason) {
 	console.log('closed', path, 'because', reason)
 	stalker.removeAllListeners()  // as it is closed, no need for our change or log listeners any more
 })
+
+// Set the default configuration for the stalker/watcher
+// http://rawgit.com/bevry/watchr/master/docs/#Watcher%23setConfig
 stalker.setConfig({
-	// Stat (optional, defaults to `null`)
-	// A stat object for the path if we already have one, otherwise it will be fetched for us
 	stat: null,
-
-	// Interval (optional, defaults to `5007`)
-	// for systems that poll to detect file changes, how often should it poll in millseconds
-	// if you are watching a lot of files, make this value larger otherwise you will have huge memory load
-	// only applicable to the `watchFile` watching method
 	interval: 5007,
-
-	// Persistent (optional, defaults to `true`)
-	// whether or not we should keep the node process alive for as long as files are still being watched
-	// only applicable to the `watchFile` watching method
 	persistent: true,
-
-	// Catchup Delay (optional, defaults to `1000`)
-	// Because of swap files, the original file may be deleted, and then over-written with by moving a swap file in it's place
-	// Without a catchup delay, we would report the original file's deletion, and ignore the swap file changes
-	// With a catchup delay, we would wait until there is a pause in events, then scan for the correct changes
-	catchupDelay: 2 * 1000,
-
-	// Preferred Methods (optional, defaults to `['watch','watchFile']`)
-	// In which order should use the watch methods when watching the file
+	catchupDelay: 2000,
 	preferredMethods: ['watch', 'watchFile'],
-
-	// Follow symlinks, i.e. use stat rather than lstat. (optional, default to `true`)
 	followLinks: true,
-
-	// Ignore Paths (optional, defaults to `false`)
-	// array of paths that we should ignore
 	ignorePaths: false,
-
-	// Ignore Hidden Files (optional, defaults to `false`)
-	// whether or not to ignored files which filename starts with a `.`
 	ignoreHiddenFiles: false,
-
-	// Ignore Common Patterns (optional, defaults to `true`)
-	// whether or not to ignore common undesirable file patterns (e.g. `.svn`, `.git`, `.DS_Store`, `thumbs.db`, etc)
 	ignoreCommonPatterns: true,
-
-	// Ignore Custom Patterns (optional, defaults to `null`)
-	// any custom ignore patterns that you would also like to ignore along with the common patterns
 	ignoreCustomPatterns: null
 })
+
+// Start watching
 stalker.watch(next)
+
+// Stop watching
 stalker.close()
 ```
 

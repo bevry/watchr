@@ -1,3 +1,4 @@
+/* @flow */
 /* eslint no-console:0 no-sync:0 */
 
 // Requires
@@ -46,10 +47,6 @@ function runTests (opts, describe, test) {
 	// Change detection
 	let changes = []
 	function checkChanges (expectedChanges, extraTest, next) {
-		if ( !next ) {
-			next = extraTest
-			extraTest = null
-		}
 		wait(batchDelay, function () {
 			if ( changes.length !== expectedChanges ) {
 				console.log(changes)
@@ -81,7 +78,7 @@ function runTests (opts, describe, test) {
 	function makeDir (fileRelativePath) {
 		console.log('make:', fileRelativePath)
 		const fileFullPath = pathUtil.join(fixturesPath, fileRelativePath)
-		fsUtil.mkdirSync(fileFullPath, '700')
+		fsUtil.mkdirSync(fileFullPath, 0o700)
 	}
 	function renameFile (fileRelativePath1, fileRelativePath2) {
 		console.log('rename:', fileRelativePath1, 'TO', fileRelativePath2)
@@ -122,17 +119,17 @@ function runTests (opts, describe, test) {
 	test('detect write', function (done) {
 		writeFile('a file')
 		writeFile('a directory/a sub file of a directory')
-		checkChanges(2, done)
+		checkChanges(2, null, done)
 	})
 
 	test('detect write ignored on hidden files', function (done) {
 		writeFile('.a hidden directory/a sub file of a hidden directory')
-		checkChanges(0, done)
+		checkChanges(0, null, done)
 	})
 
 	test('detect write ignored on ignored files', function (done) {
 		writeFile('a specific ignored file')
-		checkChanges(0, done)
+		checkChanges(0, null, done)
 	})
 
 	test('detect delete', function (done) {
@@ -152,17 +149,17 @@ function runTests (opts, describe, test) {
 
 	test('detect delete ignored on hidden files', function (done) {
 		deleteFile('.a hidden directory/a sub file of a hidden directory')
-		checkChanges(0, done)
+		checkChanges(0, null, done)
 	})
 
 	test('detect delete ignored on ignored files', function (done) {
 		deleteFile('a specific ignored file')
-		checkChanges(0, done)
+		checkChanges(0, null, done)
 	})
 
 	test('detect mkdir', function (done) {
 		makeDir('a new directory')
-		checkChanges(1, done)
+		checkChanges(1, null, done)
 	})
 
 	test('detect mkdir and write', function (done) {
@@ -170,27 +167,32 @@ function runTests (opts, describe, test) {
 		writeFile('another new file')
 		writeFile('and another new file')
 		makeDir('another new directory')
-		checkChanges(4, done)
+		checkChanges(4, null, done)
 	})
 
 	test('detect rename', function (done) {
 		renameFile('a new file', 'a new file that was renamed')
-		checkChanges(2, done)  // unlink, new
+		checkChanges(2, null, done)  // unlink, new
 	})
 
 	test('detect subdir file write', function (done) {
 		writeFile('a new directory/a new file of a new directory')
 		writeFile('a new directory/another new file of a new directory')
-		checkChanges(2, done)
+		checkChanges(2, null, done)
 	})
 
 	test('detect subdir file delete', function (done) {
 		deleteFile('a new directory/another new file of a new directory')
-		checkChanges(1, done)
+		checkChanges(1, null, done)
 	})
 
 	test('stop watching', function () {
-		stalker.close()
+		if ( stalker ) {
+			stalker.close()
+		}
+		else {
+			throw new Error('unexpected state')
+		}
 	})
 }
 

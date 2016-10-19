@@ -64,15 +64,24 @@
   },
   "editions": [
     {
-      "description": "Source + ESNext + Require",
+      "description": "Source + ESNext + Require + Flow Type Comments",
       "entry": "index.js",
       "directory": "source",
       "syntaxes": [
         "javascript",
         "esnext",
         "require",
+        "arrows",
+        "getset",
         "const",
-        "let"
+        "let",
+        "classes",
+        "defaults",
+        "spread",
+        "rest",
+        "destructuring",
+        "template strings",
+        "flow type comments"
       ]
     },
     {
@@ -100,8 +109,9 @@
     "release:publish": "npm publish",
     "release:tag": "git tag v$npm_package_version -a",
     "release:push": "git push origin master && git push origin --tags",
-    "pretest": "npm run test:eslint",
+    "pretest": "npm run test:eslint && npm run test:flow",
     "test:eslint": "eslint ./source",
+    "test:flow": "flow check",
     "test": "node --harmony ./test.js"
   },
   "dependencies": {

@@ -33,7 +33,6 @@ Watchr provides a normalised API the file watching APIs of different node versio
 
 <a href="https://npmjs.com" title="npm is a package manager for javascript"><h3>NPM</h3></a><ul>
 <li>Install: <code>npm install --save watchr</code></li>
-<li>Executable: <code>watchr</code></li>
 <li>Module: <code>require('watchr')</code></li></ul>
 
 <h3><a href="https://github.com/bevry/editions" title="Editions are the best way to produce and consume packages you care about.">Editions</a></h3>
@@ -41,7 +40,7 @@ Watchr provides a normalised API the file watching APIs of different node versio
 <p>This package is published with the following editions:</p>
 
 <ul><li><code>watchr</code> aliases <code>watchr/index.js</code></li>
-<li><code>watchr/index.js</code> is Source + <a href="https://babeljs.io/docs/learn-es2015/" title="ECMAScript Next">ESNext</a> + <a href="https://nodejs.org/dist/latest-v5.x/docs/api/modules.html" title="Node/CJS Modules">Require</a></li>
+<li><code>watchr/index.js</code> is Source + <a href="https://babeljs.io/docs/learn-es2015/" title="ECMAScript Next">ESNext</a> + <a href="https://nodejs.org/dist/latest-v5.x/docs/api/modules.html" title="Node/CJS Modules">Require</a> + <a href="http://flowtype.org/blog/2015/02/20/Flow-Comments.html" title="Flow is a static type checker for JavaScript">Flow Type Comments</a></li>
 <li><code>watchr</code> aliases <code>watchr/index.js</code></li>
 <li><code>watchr/index.js</code> is <a href="https://babeljs.io" title="The compiler for writing next generation JavaScript">Babel</a> Compiled + <a href="http://babeljs.io/docs/plugins/preset-es2015/" title="ECMAScript 2015">ES2015</a> + <a href="https://nodejs.org/dist/latest-v5.x/docs/api/modules.html" title="Node/CJS Modules">Require</a></li></ul>
 

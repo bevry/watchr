@@ -131,6 +131,7 @@
     "core-js": "^2.4.1",
     "documentation": "^4.0.0-beta11",
     "eslint": "^2.13.1",
+    "flow-bin": "^0.33.0",
     "joe": "^1.8.0",
     "joe-reporter-console": "^1.2.1",
     "projectz": "^1.2.0",

@@ -163,7 +163,7 @@
       open
     </h3>
     
-      <a class='fr fill-darken0 round round pad1x quiet h5' href='https://github.com/bevry/watchr/blob/980d791a7fe0ae76ceea6275324587b35286eb45/./source/index.js#L77-L81'>
+      <a class='fr fill-darken0 round round pad1x quiet h5' href='https://github.com/bevry/watchr/blob/e47f5310950acf22fbc33be6f0673bc437ffb606/./source/index.js#L78-L83'>
       <span>./source/index.js</span>
       </a>
     
@@ -173,7 +173,7 @@
   <p>Alias for creating a new <a href="#stalker">Stalker</a> with some basic configuration</p>
 
 
-  <div class='pre p1 fill-light mt0'>open(path: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, changeListener: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">function</a>, next: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">function</a>): this</div>
+  <div class='pre p1 fill-light mt0'>open(path: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, changeListener: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">function</a>, next: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">function</a>): <a href="#stalker">Stalker</a></div>
 
   
 
@@ -221,8 +221,9 @@
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>this</code>:
+      <code><a href="#stalker">Stalker</a></code>:
         
+
       
     
   
@@ -249,7 +250,7 @@
       create
     </h3>
     
-      <a class='fr fill-darken0 round round pad1x quiet h5' href='https://github.com/bevry/watchr/blob/980d791a7fe0ae76ceea6275324587b35286eb45/./source/index.js#L88-L90'>
+      <a class='fr fill-darken0 round round pad1x quiet h5' href='https://github.com/bevry/watchr/blob/e47f5310950acf22fbc33be6f0673bc437ffb606/./source/index.js#L90-L92'>
       <span>./source/index.js</span>
       </a>
     
@@ -259,7 +260,7 @@
   <p>Alias for creating a new <a href="#stalker">Stalker</a></p>
 
 
-  <div class='pre p1 fill-light mt0'>create(args: ...Any): this</div>
+  <div class='pre p1 fill-light mt0'>create(args: ...any): <a href="#stalker">Stalker</a></div>
 
   
 
@@ -275,7 +276,7 @@
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>args</span> <code class='quiet'>(...Any)</code> 
+            <span class='code bold'>args</span> <code class='quiet'>(...any)</code> 
           </div>
           
         </div>
@@ -288,8 +289,9 @@
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>this</code>:
+      <code><a href="#stalker">Stalker</a></code>:
         
+
       
     
   
@@ -316,7 +318,7 @@
       Stalker
     </h3>
     
-      <a class='fr fill-darken0 round round pad1x quiet h5' href='https://github.com/bevry/watchr/blob/980d791a7fe0ae76ceea6275324587b35286eb45/./source/index.js#L99-L191'>
+      <a class='fr fill-darken0 round round pad1x quiet h5' href='https://github.com/bevry/watchr/blob/e47f5310950acf22fbc33be6f0673bc437ffb606/./source/index.js#L104-L196'>
       <span>./source/index.js</span>
       </a>
     
@@ -324,7 +326,10 @@
   
 
   <p>Stalker
-A watcher of the watchers</p>
+A watcher of the watchers.
+Events that are listened to on the stalker will also be listened to on the attached watcher.
+When the watcher is closed, the stalker's listeners will be removed.
+When all stalkers for a watcher are removed, the watcher will close.</p>
 
 
   <div class='pre p1 fill-light mt0'>new Stalker()</div>
@@ -483,6 +488,7 @@ A watcher of the watchers</p>
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code>this</code>:
         
+
       
     
   
@@ -516,7 +522,7 @@ A watcher of the watchers</p>
   <p>Alias for <a href="#watchersetconfig">Watcher#setConfig</a></p>
 
 
-  <div class='pre p1 fill-light mt0'>setConfig(args: ...Any): this</div>
+  <div class='pre p1 fill-light mt0'>setConfig(args: ...any): this</div>
 
   
 
@@ -532,7 +538,7 @@ A watcher of the watchers</p>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>args</span> <code class='quiet'>(...Any)</code> 
+            <span class='code bold'>args</span> <code class='quiet'>(...any)</code> 
           </div>
           
         </div>
@@ -547,6 +553,7 @@ A watcher of the watchers</p>
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code>this</code>:
         
+
       
     
   
@@ -580,7 +587,7 @@ A watcher of the watchers</p>
   <p>Alias for <a href="#watcherwatch">Watcher#watch</a></p>
 
 
-  <div class='pre p1 fill-light mt0'>watch(args: ...Any): this</div>
+  <div class='pre p1 fill-light mt0'>watch(args: ...any): this</div>
 
   
 
@@ -596,7 +603,7 @@ A watcher of the watchers</p>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>args</span> <code class='quiet'>(...Any)</code> 
+            <span class='code bold'>args</span> <code class='quiet'>(...any)</code> 
           </div>
           
         </div>
@@ -611,6 +618,7 @@ A watcher of the watchers</p>
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code>this</code>:
         
+
       
     
   
@@ -647,7 +655,7 @@ A watcher of the watchers</p>
       Watcher
     </h3>
     
-      <a class='fr fill-darken0 round round pad1x quiet h5' href='https://github.com/bevry/watchr/blob/980d791a7fe0ae76ceea6275324587b35286eb45/./source/index.js#L216-L920'>
+      <a class='fr fill-darken0 round round pad1x quiet h5' href='https://github.com/bevry/watchr/blob/e47f5310950acf22fbc33be6f0673bc437ffb606/./source/index.js#L221-L925'>
       <span>./source/index.js</span>
       </a>
     
@@ -660,9 +668,9 @@ Watches a path and if its a directory, its children too, and emits change events
 <ul>
 <li><code>log(logLevel, ...args)</code> - emitted for debugging, child events are bubbled up</li>
 <li><code>close(reason)</code> - the watcher has been closed, perhaps for a reason</li>
-<li><code>change(&#x27;update&#x27;, fullPath, currentStat, previousStat)</code> - an update event has occured on the <code>fullPath</code></li>
-<li><code>change(&#x27;delete&#x27;, fullPath, currentStat)</code> - an delete event has occured on the <code>fullPath</code></li>
-<li><code>change(&#x27;create&#x27;, fullPath, null, previousStat)</code> - a create event has occured on the <code>fullPath</code></li>
+<li><code>change('update', fullPath, currentStat, previousStat)</code> - an update event has occured on the <code>fullPath</code></li>
+<li><code>change('delete', fullPath, currentStat)</code> - an delete event has occured on the <code>fullPath</code></li>
+<li><code>change('create', fullPath, null, previousStat)</code> - a create event has occured on the <code>fullPath</code></li>
 </ul>
 
 
@@ -690,7 +698,7 @@ Watches a path and if its a directory, its children too, and emits change events
     <div>
       
         <div class='space-bottom0'>
-          <span class='code bold'>stalkers</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&lt;<a href="#stalker">Stalker</a>&gt;)</code>
+          <span class='code bold'>stalkers</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="#stalker">Stalker</a>>)</code>
           : the associated stalkers for this watcher
 
           
@@ -721,7 +729,7 @@ Watches a path and if its a directory, its children too, and emits change events
       
         <div class='space-bottom0'>
           <span class='code bold'>children</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
-          : a (relativePath =&gt; stalker) mapping of children
+          : a (relativePath => stalker) mapping of children
 
           
         </div>
@@ -875,9 +883,9 @@ Watches a path and if its a directory, its children too, and emits change events
             <tbody class='mt1'>
               
                 <tr>
-                  <td class='break-word'><span class='code bold'>opts.ignoreCustomPatterns</span> <code class='quiet'>[<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp">RegExp</a>]</code>
+                  <td class='break-word'><span class='code bold'>opts.stat</span> <code class='quiet'>[Stats]</code>
                   </td>
-                  <td class='break-word'><span>A regular expression that if matched again the path will ignore the path
+                  <td class='break-word'><span>A stat object for the path if we already have one, otherwise it will be fetched for us
 </span></td>
                 </tr>
               
@@ -913,9 +921,11 @@ Watches a path and if its a directory, its children too, and emits change events
                 </tr>
               
                 <tr>
-                  <td class='break-word'><span class='code bold'>opts.stat</span> <code class='quiet'>[Stats]</code>
+                  <td class='break-word'><span class='code bold'>opts.preferredMethods</span> <code class='quiet'>[<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>>]</code>
+                  
+                    (default <code>[&#39;watch&#39;,&#39;watchFile&#39;]</code>)
                   </td>
-                  <td class='break-word'><span>A stat object for the path if we already have one, otherwise it will be fetched for us
+                  <td class='break-word'><span>The order of watch methods to attempt, if the first fails, move onto the second
 </span></td>
                 </tr>
               
@@ -932,7 +942,7 @@ Watches a path and if its a directory, its children too, and emits change events
                 </tr>
               
                 <tr>
-                  <td class='break-word'><span class='code bold'>opts.ignorePaths</span> <code class='quiet'>[<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&lt;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>&gt;]</code>
+                  <td class='break-word'><span class='code bold'>opts.ignorePaths</span> <code class='quiet'>[<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>>]</code>
                   
                     (default <code>false</code>)
                   </td>
@@ -968,11 +978,9 @@ Watches a path and if its a directory, its children too, and emits change events
                 </tr>
               
                 <tr>
-                  <td class='break-word'><span class='code bold'>opts.preferredMethods</span> <code class='quiet'>[<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&lt;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>&gt;]</code>
-                  
-                    (default <code>[&#39;watch&#39;,&#39;watchFile&#39;]</code>)
+                  <td class='break-word'><span class='code bold'>opts.ignoreCustomPatterns</span> <code class='quiet'>[<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp">RegExp</a>]</code>
                   </td>
-                  <td class='break-word'><span>The order of watch methods to attempt, if the first fails, move onto the second
+                  <td class='break-word'><span>A regular expression that if matched again the path will ignore the path
 </span></td>
                 </tr>
               
@@ -991,6 +999,7 @@ Watches a path and if its a directory, its children too, and emits change events
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code>this</code>:
         
+
       
     
   
@@ -1024,7 +1033,7 @@ Watches a path and if its a directory, its children too, and emits change events
   <p>Emit a log event with the given arguments</p>
 
 
-  <div class='pre p1 fill-light mt0'>log(args: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&lt;Any&gt;): this</div>
+  <div class='pre p1 fill-light mt0'>log(args: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;any>): this</div>
 
   
 
@@ -1040,7 +1049,7 @@ Watches a path and if its a directory, its children too, and emits change events
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>args</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&lt;Any&gt;)</code> 
+            <span class='code bold'>args</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;any>)</code> 
           </div>
           
         </div>
@@ -1055,6 +1064,7 @@ Watches a path and if its a directory, its children too, and emits change events
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code>this</code>:
         
+
       
     
   
@@ -1153,6 +1163,7 @@ If the stat already exists and <code>opts.reset</code> is <code>false</code>, th
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code>this</code>:
         
+
       
     
   
@@ -1220,6 +1231,7 @@ And mark the state as deleted or closed, dependning on the reason</p>
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code>this</code>:
         
+
       
     
   
@@ -1255,7 +1267,7 @@ If we are already watching and <code>opts.reset</code> is not <code>true</code> 
 Otherwise, close the current watchers for us and the children via <a href="#watcherclose">Watcher#close</a> and setup new ones</p>
 
 
-  <div class='pre p1 fill-light mt0'>watch(opts: [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>], next: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">function</a>, args: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&lt;Any&gt;): this</div>
+  <div class='pre p1 fill-light mt0'>watch(opts: [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>], next: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">function</a>, args: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;any>): this</div>
 
   
 
@@ -1312,7 +1324,7 @@ Otherwise, close the current watchers for us and the children via <a href="#watc
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>args</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&lt;Any&gt;)</code> ignore this argument, it is used just to handle the optional 
+            <span class='code bold'>args</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;any>)</code> ignore this argument, it is used just to handle the optional 
 <code>opts</code>
  argument
 
@@ -1330,6 +1342,7 @@ Otherwise, close the current watchers for us and the children via <a href="#watc
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code>this</code>:
         
+
       
     
   

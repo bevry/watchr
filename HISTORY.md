@@ -1,5 +1,11 @@
 # History
 
+## v3.0.1 2016 October 23
+- Fixed `open` not returning the stalker instance
+	- Thanks to [Davide Mancuso](https://github.com/atomictag) for [issue #88](https://github.com/bevry/watchr/issues/88)
+- Fixed documentation on `create` not indicating that it returns the stalker instance
+- Updated base files
+
 ## v3.0.0 2016 October 19
 - Rewrote for better stability, all issues should now be considered closed
 - Converted from CoffeeScript to JavaScript

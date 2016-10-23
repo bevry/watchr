@@ -72,18 +72,19 @@ Alias for creating a new {@link Stalker} with some basic configuration
 @param {string} path - the path to watch
 @param {function} changeListener - the change listener for {@link Watcher}
 @param {function} next - the completion callback for {@link Watcher#watch}
-@returns {this}
+@returns {Stalker}
 */
 function open (path /* :string */, changeListener /* :function */, next /* :function */) {
 	const stalker = new Stalker(path)
 	stalker.on('change', changeListener)
 	stalker.watch({}, next)
+	return stalker
 }
 
 /**
 Alias for creating a new {@link Stalker}
 @access public
-@returns {this}
+@returns {Stalker}
 */
 function create (...args /* :Array<any> */) {
 	return new Stalker(...args)

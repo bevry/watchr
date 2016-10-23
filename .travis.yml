@@ -1,4 +1,4 @@
-# 2016 October 10
+# 2016 October 21
 # https://github.com/bevry/base
 
 # Use the latest travis infrastructure
@@ -7,6 +7,7 @@ sudo: false
 # We use node
 language: node_js
 node_js:
+  - "0.8"
   - "0.10"
   - "0.12"
   - "4"
@@ -15,13 +16,28 @@ cache:
   directories:
     - node_modules
 
-# Prepare our tests
-# Ensure the project is setup correctly and compiled
-install: "npm run-script setup"
-before_script: "npm run-script compile"
+# Ensure dependencies are installed using an LTS node version
+install: >
+  if nvm ls-remote --lts | grep "$(nvm current)"; then
+    npm install
+  else
+    nvm install --lts
+    export LTS_NODE_VERSION="$(nvm current)"
+    npm install
+    nvm use "$TRAVIS_NODE_VERSION"
+  fi
 
-# Run our tests
-script: "npm test"
+# Ensure compilation and linting occur on an LTS node version
+before_script: >
+  if nvm ls-remote --lts | grep "$(nvm current)"; then
+    echo "running on a LTS node version, compiling and linting"
+    npm run our:compile && npm run our:verify
+  else
+    echo "running on a non-LTS node version, compiling with lts, skipping linting"
+    nvm use "$LTS_NODE_VERSION"
+    npm run our:compile
+    nvm use "$TRAVIS_NODE_VERSION"
+  fi
 
 # Custom notifications
 notifications:

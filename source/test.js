@@ -1,5 +1,6 @@
 /* @flow */
 /* eslint no-console:0 no-sync:0 */
+'use strict'
 
 // Requires
 const pathUtil = require('path')

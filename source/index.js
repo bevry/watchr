@@ -1,5 +1,6 @@
 /* @flow */
 /* eslint no-use-before-define:0 */
+'use strict'
 
 // Imports
 const pathUtil = require('path')
@@ -92,14 +93,17 @@ function create (...args /* :Array<any> */) {
 
 /**
 Stalker
-A watcher of the watchers
+A watcher of the watchers.
+Events that are listened to on the stalker will also be listened to on the attached watcher.
+When the watcher is closed, the stalker's listeners will be removed.
+When all stalkers for a watcher are removed, the watcher will close.
 @protected
 @property {Object} watchers - static collection of all the watchers mapped by path
 @property {Watcher} watcher - the associated watcher for this stalker
 */
 class Stalker extends EventEmitter {
-	/* :: static watchers: {[key:string]: Watcher} */
-	/* :: watcher: Watcher */
+	/* :: static watchers: {[key:string]: Watcher}; */
+	/* :: watcher: Watcher; */
 
 	/**
 	@param {string} path - the path to watch
@@ -215,16 +219,16 @@ Available events:
 @property {Object} config - the configuration options
 */
 class Watcher extends EventEmitter {
-	/* :: stalkers: Array<Stalker> */
+	/* :: stalkers: Array<Stalker>; */
 
-	/* :: path: string */
-	/* :: stat: null | Stats */
-	/* :: fswatcher: null | FSWatcher */
-	/* :: children: {[path:string]: Stalker} */
-	/* :: state: StateEnum */
-	/* :: listenerTaskGroup: null | TaskGroup */
-	/* :: listenerTimeout: null | number */
-	/* :: config: WatcherConfig */
+	/* :: path: string; */
+	/* :: stat: null | Stats; */
+	/* :: fswatcher: null | FSWatcher; */
+	/* :: children: {[path:string]: Stalker}; */
+	/* :: state: StateEnum; */
+	/* :: listenerTaskGroup: null | TaskGroup; */
+	/* :: listenerTimeout: null | number; */
+	/* :: config: WatcherConfig; */
 
 	/**
 	@param {string} path - the path to watch

@@ -1,4 +1,3 @@
-// 2016 March 8 / Custom
+// 2016 March 8
 // https://github.com/bevry/editions
-require('core-js')
-require('editions').requirePackage(process.cwd(), require, 'test.js')
+module.exports = require('editions').requirePackage(__dirname, require, 'test.js')

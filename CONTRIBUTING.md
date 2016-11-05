@@ -1,5 +1,5 @@
 <!--
-2016 October 21
+2016 November 4
 https://github.com/bevry/base
 -->
 
@@ -23,10 +23,10 @@ Our [Contributing Guide](https://learn.bevry.me/community/contribute) contains u
 
 1. Fork the project and clone your fork - [guide](https://help.github.com/articles/fork-a-repo/)
 
-1. Install local dependencies
+1. Setup the project for development
 
   ``` bash
-  npm install
+  npm run our:setup
   ```
 
 

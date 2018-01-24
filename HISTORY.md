@@ -1,5 +1,9 @@
 # History
 
+## v4.0.1 2018 January 24
+- Updated minimum supported node version to 0.12, due [readdir-cluster](https://github.com/bevry/readdir-cluster)'s use of Promises
+    - Fixes [ReferenceError: Promise is not defined](https://travis-ci.org/bevry/watchr/jobs/332806957)
+
 ## v4.0.0 2018 January 24
 - This is an API backwards compatible release, however the underlying changes may introduce some problems, so a rolling adoption is warranted
 - Directory contents are now scanned in parallel

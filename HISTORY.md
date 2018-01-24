@@ -1,5 +1,13 @@
 # History
 
+## v4.0.0 2018 January 24
+- This is an API backwards compatible release, however the underlying changes may introduce some problems, so a rolling adoption is warranted
+- Directory contents are now scanned in parallel
+- Directory scanning is now done by [scandirectory v3](https://github.com/bevry/scandirectory) (instead of v2) which uses [readdir-cluster](https://github.com/bevry/readdir-cluster)
+    - readdir-cluster should offer performance benefits, but [currently does not run in non-master processes](https://github.com/bevry/readdir-cluster/issues/5)
+- Updated dependencies
+- Updated base files
+
 ## v3.0.1 2016 October 23
 - Fixed `open` not returning the stalker instance
 	- Thanks to [Davide Mancuso](https://github.com/atomictag) for [issue #88](https://github.com/bevry/watchr/issues/88)

@@ -716,10 +716,11 @@ class Watcher extends EventEmitter {
 		}
 
 		// Cycle through the directory if necessary
+		const path = this.path
 		if (this.stat.isDirectory()) {
 			scandir({
 				// Path
-				path: this.path,
+				path,
 
 				// Options
 				ignorePaths: this.config.ignorePaths,
@@ -729,17 +730,19 @@ class Watcher extends EventEmitter {
 				recurse: false,
 
 				// Next
-				next,
-
-				// File and Directory Actions
-				action (fullPath, relativePath, nextFile) {
-					// Check we are still releveant
-					if (watchr.state !== 'active') {
-						return nextFile(null, true)  // skip without error
-					}
-
-					// Watch this child
-					watchr.watchChild({ fullPath, relativePath }, nextFile)
+				next (err, list) {
+					if (err) return next(err)
+					const tasks = new TaskGroup(`scandir tasks for ${path}`, { domain: false, concurrency: 0 }).done(next)
+					Object.keys(list).forEach(function (relativePath) {
+						tasks.addTask(function (complete) {
+							const fullPath = pathUtil.join(path, relativePath)
+							// Check we are still relevant
+							if (watchr.state !== 'active') return complete()
+							// Watch this child
+							watchr.watchChild({ fullPath, relativePath }, complete)
+						})
+					})
+					tasks.run()
 				}
 			})
 

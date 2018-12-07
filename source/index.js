@@ -63,7 +63,7 @@ type WatcherConfig = {
 */
 
 // Helper for error logging
-function errorToString (error /* :Error */) {
+function errorToString(error /* :Error */) {
 	return error.stack.toString() || error.message || error.toString()
 }
 
@@ -75,7 +75,11 @@ Alias for creating a new {@link Stalker} with some basic configuration
 @param {function} next - the completion callback for {@link Watcher#watch}
 @returns {Stalker}
 */
-function open (path /* :string */, changeListener /* :function */, next /* :function */) {
+function open(
+	path /* :string */,
+	changeListener /* :function */,
+	next /* :function */
+) {
 	const stalker = new Stalker(path)
 	stalker.on('change', changeListener)
 	stalker.watch({}, next)
@@ -87,7 +91,7 @@ Alias for creating a new {@link Stalker}
 @access public
 @returns {Stalker}
 */
-function create (...args /* :Array<any> */) {
+function create(...args /* :Array<any> */) {
 	return new Stalker(...args)
 }
 
@@ -108,14 +112,15 @@ class Stalker extends EventEmitter {
 	/**
 	@param {string} path - the path to watch
 	*/
-	constructor (path /* :string */) {
+	constructor(path /* :string */) {
 		super()
 
 		// Ensure global watchers singleton
 		if (Stalker.watchers == null) Stalker.watchers = {}
 
 		// Add our watcher to the singleton
-		if (Stalker.watchers[path] == null) Stalker.watchers[path] = new Watcher(path)
+		if (Stalker.watchers[path] == null)
+			Stalker.watchers[path] = new Watcher(path)
 		this.watcher = Stalker.watchers[path]
 
 		// Add our stalker to the watcher
@@ -129,8 +134,12 @@ class Stalker extends EventEmitter {
 		})
 
 		// Add the listener proxies
-		this.on('newListener', (eventName, listener) => this.watcher.on(eventName, listener))
-		this.on('removeListener', (eventName, listener) => this.watcher.removeListener(eventName, listener))
+		this.on('newListener', (eventName, listener) =>
+			this.watcher.on(eventName, listener)
+		)
+		this.on('removeListener', (eventName, listener) =>
+			this.watcher.removeListener(eventName, listener)
+		)
 	}
 
 	/**
@@ -138,11 +147,13 @@ class Stalker extends EventEmitter {
 	@private
 	@returns {this}
 	*/
-	remove () {
+	remove() {
 		// Remove our stalker from the watcher
 		const index = this.watcher.stalkers.indexOf(this)
 		if (index !== -1) {
-			this.watcher.stalkers = this.watcher.stalkers.slice(0, index).concat(this.watcher.stalkers.slice(index + 1))
+			this.watcher.stalkers = this.watcher.stalkers
+				.slice(0, index)
+				.concat(this.watcher.stalkers.slice(index + 1))
 		}
 
 		// Kill our stalker
@@ -160,7 +171,7 @@ class Stalker extends EventEmitter {
 	@param {string} [reason] - optional reason to provide for closure
 	@returns {this}
 	*/
-	close (reason /* :?string */) {
+	close(reason /* :?string */) {
 		// Remove our stalker
 		this.remove()
 
@@ -179,7 +190,7 @@ class Stalker extends EventEmitter {
 	@access public
 	@returns {this}
 	*/
-	setConfig (...args /* :Array<any> */) {
+	setConfig(...args /* :Array<any> */) {
 		this.watcher.setConfig(...args)
 		return this
 	}
@@ -189,7 +200,7 @@ class Stalker extends EventEmitter {
 	@access public
 	@returns {this}
 	*/
-	watch (...args /* :Array<any> */) {
+	watch(...args /* :Array<any> */) {
 		this.watcher.watch(...args)
 		return this
 	}
@@ -233,7 +244,7 @@ class Watcher extends EventEmitter {
 	/**
 	@param {string} path - the path to watch
 	*/
-	constructor (path /* :string */) {
+	constructor(path /* :string */) {
 		// Construct the EventEmitter
 		super()
 
@@ -276,7 +287,7 @@ class Watcher extends EventEmitter {
 	@param {RegExp} [opts.ignoreCustomPatterns] - A regular expression that if matched again the path will ignore the path
 	@returns {this}
 	*/
-	setConfig (opts /* :WatcherOpts */) {
+	setConfig(opts /* :WatcherOpts */) {
 		// Apply
 		extendr.extend(this.config, opts)
 
@@ -295,7 +306,7 @@ class Watcher extends EventEmitter {
 	@param {Array<*>} args
 	@returns {this}
 	*/
-	log (...args /* :Array<any> */) {
+	log(...args /* :Array<any> */) {
 		// Emit the log event
 		this.emit('log', ...args)
 
@@ -308,7 +319,7 @@ class Watcher extends EventEmitter {
 	@private
 	@returns {Object}
 	*/
-	getIgnoredOptions () {
+	getIgnoredOptions() {
 		// Return the ignore options
 		return {
 			ignorePaths: this.config.ignorePaths,
@@ -324,7 +335,7 @@ class Watcher extends EventEmitter {
 	@param {String} path - the path (likely of a child)
 	@returns {boolean}
 	*/
-	isIgnoredPath (path /* :string */) {
+	isIgnoredPath(path /* :string */) {
 		// Ignore?
 		const ignore = ignorefs.isIgnoredPath(path, this.getIgnoredOptions())
 
@@ -340,15 +351,14 @@ class Watcher extends EventEmitter {
 	@param  {function} next - completion callback with signature `error:?Error, stat?:Stats`
 	@returns {this}
 	*/
-	getStat (opts /* :ResetOpts */, next /* :StatCallback */) {
+	getStat(opts /* :ResetOpts */, next /* :StatCallback */) {
 		// Figure out what stat method we want to use
 		const method = this.config.followLinks ? 'stat' : 'lstat'
 
 		// Fetch
 		if (this.stat && opts.reset !== true) {
 			next(null, this.stat)
-		}
-		else {
+		} else {
 			fsUtil[method](this.path, (err, stat) => {
 				if (err) return next(err)
 				this.stat = stat
@@ -398,12 +408,12 @@ class Watcher extends EventEmitter {
 	@param {function} [next] - the optional completion callback with the signature `(error:?Error)`
 	@returns {this}
 	*/
-	listener (opts /* :ListenerOpts */, next /* ::?:ErrorCallback */) {
+	listener(opts /* :ListenerOpts */, next /* ::?:ErrorCallback */) {
 		// Prepare
 		const config = this.config
 		const method = opts.method
 		if (!next) {
-			next = (err) => {
+			next = err => {
 				if (err) {
 					this.emit('error', err)
 				}
@@ -427,8 +437,7 @@ class Watcher extends EventEmitter {
 				this.listenerTaskGroup = null
 				this.listenerTimeout = null
 				tasks.run()
-			}
-			else {
+			} else {
 				this.emit('error', new Error('unexpected state'))
 			}
 		}, config.catchupDelay || 0)
@@ -440,10 +449,16 @@ class Watcher extends EventEmitter {
 		}
 
 		// Start the detection process
-		const tasks = this.listenerTaskGroup = new TaskGroup(`listener tasks for ${this.path}`, { domain: false }).done(next)
-		tasks.addTask('check if the file still exists', (complete) => {
+		const tasks = (this.listenerTaskGroup = new TaskGroup(
+			`listener tasks for ${this.path}`,
+			{ domain: false }
+		).done(next))
+		tasks.addTask('check if the file still exists', complete => {
 			// Log
-			this.log('debug', `watch evaluating on: ${this.path} [state: ${this.state}]`)
+			this.log(
+				'debug',
+				`watch evaluating on: ${this.path} [state: ${this.state}]`
+			)
 
 			// Check if this is still needed
 			if (this.state !== 'active') {
@@ -453,7 +468,7 @@ class Watcher extends EventEmitter {
 			}
 
 			// Check if the file still exists
-			fsUtil.exists(this.path, (exists) => {
+			fsUtil.exists(this.path, exists => {
 				// Apply local global property
 				previousStat = this.stat
 
@@ -486,7 +501,7 @@ class Watcher extends EventEmitter {
 			})
 		})
 
-		tasks.addTask('check if the file has changed', (complete) => {
+		tasks.addTask('check if the file has changed', complete => {
 			// Ensure stats exist
 			if (!currentStat || !previousStat) {
 				return complete(new Error('unexpected state'))
@@ -495,7 +510,12 @@ class Watcher extends EventEmitter {
 			// Check if there is a different file at the same location
 			// If so, we will need to rewatch the location and the children
 			if (currentStat.ino.toString() !== previousStat.ino.toString()) {
-				this.log('debug', `watch found replaced: ${this.path}`, currentStat, previousStat)
+				this.log(
+					'debug',
+					`watch found replaced: ${this.path}`,
+					currentStat,
+					previousStat
+				)
 				// note this will close the entire tree of listeners and reinstate them
 				// however, as this is probably for a file, it is probably not that bad
 				return this.watch({ reset: true }, complete)
@@ -503,7 +523,12 @@ class Watcher extends EventEmitter {
 
 			// Check if the file or directory has been modified
 			if (currentStat.mtime.toString() !== previousStat.mtime.toString()) {
-				this.log('debug', `watch found modification: ${this.path}`, previousStat, currentStat)
+				this.log(
+					'debug',
+					`watch found modification: ${this.path}`,
+					previousStat,
+					currentStat
+				)
 				return complete()
 			}
 
@@ -547,49 +572,82 @@ class Watcher extends EventEmitter {
 					if (newFileRelativePaths.indexOf(childFileRelativePath) !== -1) return
 
 					// Fetch full path
-					const childFileFullPath = pathUtil.join(this.path, childFileRelativePath)
+					const childFileFullPath = pathUtil.join(
+						this.path,
+						childFileRelativePath
+					)
 
 					// Skip if ignored file
 					if (this.isIgnoredPath(childFileFullPath)) {
-						this.log('debug', `watch ignored delete: ${childFileFullPath} via: ${this.path}`)
+						this.log(
+							'debug',
+							`watch ignored delete: ${childFileFullPath} via: ${this.path}`
+						)
 						return
 					}
 
 					// Emit the event and note the change
-					this.log('debug', `watch emit delete: ${childFileFullPath} via: ${this.path}`)
+					this.log(
+						'debug',
+						`watch emit delete: ${childFileFullPath} via: ${this.path}`
+					)
 					const childPreviousStat = child.watcher.stat
 					child.close('deleted')
-					this.emit('change', 'delete', childFileFullPath, null, childPreviousStat)
+					this.emit(
+						'change',
+						'delete',
+						childFileFullPath,
+						null,
+						childPreviousStat
+					)
 				})
 
 				// Find new files
-				eachr(newFileRelativePaths, (childFileRelativePath) => {
+				eachr(newFileRelativePaths, childFileRelativePath => {
 					// Skip if we are already watching this file
 					if (this.children[childFileRelativePath] != null) return
 
 					// Fetch full path
-					const childFileFullPath = pathUtil.join(this.path, childFileRelativePath)
+					const childFileFullPath = pathUtil.join(
+						this.path,
+						childFileRelativePath
+					)
 
 					// Skip if ignored file
 					if (this.isIgnoredPath(childFileFullPath)) {
-						this.log('debug', `watch ignored create: ${childFileFullPath} via: ${this.path}`)
+						this.log(
+							'debug',
+							`watch ignored create: ${childFileFullPath} via: ${this.path}`
+						)
 						return
 					}
 
 					// Emit the event and note the change
-					addTask('watch the new child', (complete) => {
-						this.log('debug', `watch determined create: ${childFileFullPath} via: ${this.path}`)
+					addTask('watch the new child', complete => {
+						this.log(
+							'debug',
+							`watch determined create: ${childFileFullPath} via: ${this.path}`
+						)
 						if (this.children[childFileRelativePath] != null) {
-							return complete()  // this should never occur
+							return complete() // this should never occur
 						}
-						const child = this.watchChild({
-							fullPath: childFileFullPath,
-							relativePath: childFileRelativePath
-						}, (err) => {
-							if (err) return complete(err)
-							this.emit('change', 'create', childFileFullPath, child.watcher.stat, null)
-							return complete()
-						})
+						const child = this.watchChild(
+							{
+								fullPath: childFileFullPath,
+								relativePath: childFileRelativePath
+							},
+							err => {
+								if (err) return complete(err)
+								this.emit(
+									'change',
+									'create',
+									childFileFullPath,
+									child.watcher.stat,
+									null
+								)
+								return complete()
+							}
+						)
 					})
 				})
 
@@ -610,7 +668,7 @@ class Watcher extends EventEmitter {
 	@param {string} [reason='unknown']
 	@returns {this}
 	*/
-	close (reason /* :string */ = 'unknown') {
+	close(reason /* :string */ = 'unknown') {
 		// Nothing to do? Already closed?
 		if (this.state !== 'active') return this
 
@@ -618,7 +676,7 @@ class Watcher extends EventEmitter {
 		this.log('debug', `close: ${this.path}`)
 
 		// Close our children
-		eachr(this.children, (child) => {
+		eachr(this.children, child => {
 			child.close(reason)
 		})
 
@@ -626,16 +684,14 @@ class Watcher extends EventEmitter {
 		if (this.fswatcher != null) {
 			this.fswatcher.close()
 			this.fswatcher = null
-		}
-		else {
+		} else {
 			fsUtil.unwatchFile(this.path)
 		}
 
 		// Updated state
 		if (reason === 'deleted') {
 			this.state = 'deleted'
-		}
-		else {
+		} else {
 			this.state = 'closed'
 		}
 
@@ -659,7 +715,10 @@ class Watcher extends EventEmitter {
 	@param {function} next - completion callback with signature `error:?Error`
 	@returns {this}
 	*/
-	watchChild (opts /* :WatchChildOpts */, next /* :ErrorCallback */) /* :Stalker */ {
+	watchChild(
+		opts /* :WatchChildOpts */,
+		next /* :ErrorCallback */
+	) /* :Stalker */ {
 		// Prepare
 		const watchr = this
 
@@ -705,7 +764,7 @@ class Watcher extends EventEmitter {
 	@param {function} next - completion callback with signature `error:?Error`
 	@returns {this}
 	*/
-	watchChildren (opts /* :Object */, next /* :ErrorCallback */) {
+	watchChildren(opts /* :Object */, next /* :ErrorCallback */) {
 		// Prepare
 		const watchr = this
 
@@ -730,11 +789,14 @@ class Watcher extends EventEmitter {
 				recurse: false,
 
 				// Next
-				next (err, list) {
+				next(err, list) {
 					if (err) return next(err)
-					const tasks = new TaskGroup(`scandir tasks for ${path}`, { domain: false, concurrency: 0 }).done(next)
-					Object.keys(list).forEach(function (relativePath) {
-						tasks.addTask(function (complete) {
+					const tasks = new TaskGroup(`scandir tasks for ${path}`, {
+						domain: false,
+						concurrency: 0
+					}).done(next)
+					Object.keys(list).forEach(function(relativePath) {
+						tasks.addTask(function(complete) {
 							const fullPath = pathUtil.join(path, relativePath)
 							// Check we are still relevant
 							if (watchr.state !== 'active') return complete()
@@ -745,9 +807,7 @@ class Watcher extends EventEmitter {
 					tasks.run()
 				}
 			})
-
-		}
-		else {
+		} else {
 			next()
 		}
 
@@ -762,22 +822,25 @@ class Watcher extends EventEmitter {
 	@param {function} next - completion callback with signature `error:?Error`
 	@returns {void}
 	*/
-	watchMethod (method /* :MethodEnum */, next /* :ErrorCallback */) /* :void */ {
+	watchMethod(method /* :MethodEnum */, next /* :ErrorCallback */) /* :void */ {
 		if (method === 'watch') {
 			// Check
 			if (fsUtil.watch == null) {
-				const err = new Error('watch method is not supported on this environment, fs.watch does not exist')
+				const err = new Error(
+					'watch method is not supported on this environment, fs.watch does not exist'
+				)
 				next(err)
 				return
 			}
 
 			// Watch
 			try {
-				this.fswatcher = fsUtil.watch(this.path, (...args) => this.listener({ method, args }))
+				this.fswatcher = fsUtil.watch(this.path, (...args) =>
+					this.listener({ method, args })
+				)
 				// must pass the listener here instead of doing fswatcher.on('change', opts.listener)
 				// as the latter is not supported on node 0.6 (only 0.8+)
-			}
-			catch (err) {
+			} catch (err) {
 				next(err)
 				return
 			}
@@ -785,23 +848,27 @@ class Watcher extends EventEmitter {
 			// Success
 			next()
 			return
-		}
-		else if (method === 'watchFile') {
+		} else if (method === 'watchFile') {
 			// Check
 			if (fsUtil.watchFile == null) {
-				const err = new Error('watchFile method is not supported on this environment, fs.watchFile does not exist')
+				const err = new Error(
+					'watchFile method is not supported on this environment, fs.watchFile does not exist'
+				)
 				next(err)
 				return
 			}
 
 			// Watch
 			try {
-				fsUtil.watchFile(this.path, {
-					persistent: this.config.persistent,
-					interval: this.config.interval
-				}, (...args) => this.listener({ method, args }))
-			}
-			catch (err) {
+				fsUtil.watchFile(
+					this.path,
+					{
+						persistent: this.config.persistent,
+						interval: this.config.interval
+					},
+					(...args) => this.listener({ method, args })
+				)
+			} catch (err) {
 				next(err)
 				return
 			}
@@ -809,8 +876,7 @@ class Watcher extends EventEmitter {
 			// Success
 			next()
 			return
-		}
-		else {
+		} else {
 			const err = new Error('unknown watch method')
 			next(err)
 			return
@@ -826,7 +892,7 @@ class Watcher extends EventEmitter {
 	@param {function} next - completion callback with signature `error:?Error`
 	@returns {this}
 	*/
-	watchSelf (opts /* :WatchSelfOpts */, next /* :ErrorCallback */) {
+	watchSelf(opts /* :WatchSelfOpts */, next /* :ErrorCallback */) {
 		// Prepare
 		const { errors = [] } = opts
 		let { preferredMethods = this.config.preferredMethods } = opts
@@ -836,7 +902,7 @@ class Watcher extends EventEmitter {
 		// Attempt the watch methods
 		if (preferredMethods.length) {
 			const method = preferredMethods[0]
-			this.watchMethod(method, (err) => {
+			this.watchMethod(method, err => {
 				if (err) {
 					// try again with the next preferred method
 					preferredMethods = preferredMethods.slice(1)
@@ -851,10 +917,13 @@ class Watcher extends EventEmitter {
 				// Forward
 				next()
 			})
-		}
-		else {
-			const errors = opts.errors.map((error) => error.stack || error.message || error).join('\n')
-			const err = new Error(`no watch methods left to try, failures are:\n${errors}`)
+		} else {
+			const errors = opts.errors
+				.map(error => error.stack || error.message || error)
+				.join('\n')
+			const err = new Error(
+				`no watch methods left to try, failures are:\n${errors}`
+			)
 			next(err)
 		}
 
@@ -873,18 +942,16 @@ class Watcher extends EventEmitter {
 	@param {Array<*>} args - ignore this argument, it is used just to handle the optional `opts` argument
 	@returns {this}
 	*/
-	watch (...args /* :Array<any> */) {
+	watch(...args /* :Array<any> */) {
 		// Handle overloaded signature
 		let opts /* :ResetOpts */, next /* :ErrorCallback */
 		if (args.length === 1) {
 			opts = {}
 			next = args[0]
-		}
-		else if (args.length === 2) {
+		} else if (args.length === 2) {
 			opts = args[0]
 			next = args[1]
-		}
-		else {
+		} else {
 			throw new Error('unknown arguments')
 		}
 
@@ -901,20 +968,22 @@ class Watcher extends EventEmitter {
 		this.log('debug', `watch init: ${this.path}`)
 
 		// Fetch the stat then try again
-		this.getStat({}, (err) => {
+		this.getStat({}, err => {
 			if (err) return next(err)
 
 			// Watch ourself
-			this.watchSelf({}, (err) => {
+			this.watchSelf({}, err => {
 				if (err) return next(err)
 
 				// Watch the children
-				this.watchChildren({}, (err) => {
+				this.watchChildren({}, err => {
 					if (err) {
 						this.close('child failure')
-						this.log('debug', `watch failed on [${this.path}] with ${errorToString(err)}`)
-					}
-					else {
+						this.log(
+							'debug',
+							`watch failed on [${this.path}] with ${errorToString(err)}`
+						)
+					} else {
 						this.log('debug', `watch success on [${this.path}]`)
 					}
 					return next(err)

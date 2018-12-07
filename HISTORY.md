@@ -1,5 +1,9 @@
 # History
 
+## v4.1.0 2018 December 7
+
+-   Updated dependencies, [base files](https://github.com/bevry/base) and [editions](https://editions.bevry.me) using [boundation](https://github.com/bevry/boundation)
+
 ## v4.0.1 2018 January 24
 
 -   Updated minimum supported node version to 0.12, due [readdir-cluster](https://github.com/bevry/readdir-cluster)'s use of Promises

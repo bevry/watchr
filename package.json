@@ -1,6 +1,6 @@
 {
   "name": "watchr",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "Better file system watching for Node.js",
   "homepage": "https://github.com/bevry/watchr",
   "license": "MIT",

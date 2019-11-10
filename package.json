@@ -93,7 +93,7 @@
     "ignorefs": "^1.2.0",
     "safefs": "^4.1.0",
     "scandirectory": "^3.0.1",
-    "taskgroup": "^5.3.0"
+    "taskgroup": "^6.0.0"
   },
   "devDependencies": {
     "assert-helpers": "^5.0.0",

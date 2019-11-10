@@ -1,5 +1,11 @@
 # History
 
+## v5.0.0 2019 November 10
+
+-   Updated dependencies, [base files](https://github.com/bevry/base) and [editions](https://editions.bevry.me) using [boundation](https://github.com/bevry/boundation)
+-   Development dependency `rimraf` now requires node version `6` at minimum
+    -   As such, the minimum supported node version of watchr has changed from `0.12` to the latest LTS at the time of this release which is `8`
+
 ## v4.1.0 2018 December 7
 
 -   Updated dependencies, [base files](https://github.com/bevry/base) and [editions](https://editions.bevry.me) using [boundation](https://github.com/bevry/boundation)

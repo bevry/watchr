@@ -196,7 +196,8 @@ These amazing people have contributed code to this project:
 <li><a href="http://stuartk.com/">Stuart Knightley</a> — <a href="https://github.com/bevry/watchr/commits?author=Stuk" title="View the GitHub contributions of Stuart Knightley on repository bevry/watchr">view contributions</a></li>
 <li><a href="http://digitalocean.com">David Byrd</a></li>
 <li><a href="https://github.com/jlevine22">Josh Levine</a> — <a href="https://github.com/bevry/watchr/commits?author=jlevine22" title="View the GitHub contributions of Josh Levine on repository bevry/watchr">view contributions</a></li>
-<li><a href="http://github.com/apps/dependabot">dependabot[bot]</a> — <a href="https://github.com/bevry/watchr/commits?author=dependabot[bot]" title="View the GitHub contributions of dependabot[bot] on repository bevry/watchr">view contributions</a></li></ul>
+<li><a href="http://github.com/apps/dependabot">dependabot[bot]</a> — <a href="https://github.com/bevry/watchr/commits?author=dependabot[bot]" title="View the GitHub contributions of dependabot[bot] on repository bevry/watchr">view contributions</a></li>
+<li><a href="http://github.com/apps/dependabot-preview">dependabot-preview[bot]</a> — <a href="https://github.com/bevry/watchr/commits?author=dependabot-preview[bot]" title="View the GitHub contributions of dependabot-preview[bot] on repository bevry/watchr">view contributions</a></li></ul>
 
 <a href="https://github.com/bevry/watchr/blob/master/CONTRIBUTING.md#files">Discover how you can contribute by heading on over to the <code>CONTRIBUTING.md</code> file.</a>
 

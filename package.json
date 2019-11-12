@@ -1,6 +1,6 @@
 {
   "name": "watchr",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "description": "Better file system watching for Node.js",
   "homepage": "https://github.com/bevry/watchr",
   "license": "MIT",
@@ -58,7 +58,8 @@
     "Stuart Knightley (http://stuartk.com/)",
     "David Byrd (http://digitalocean.com)",
     "Josh Levine (https://github.com/jlevine22)",
-    "dependabot[bot] (http://github.com/apps/dependabot)"
+    "dependabot[bot] (http://github.com/apps/dependabot)",
+    "dependabot-preview[bot] (http://github.com/apps/dependabot-preview)"
   ],
   "bugs": {
     "url": "https://github.com/bevry/watchr/issues"
@@ -81,7 +82,7 @@
         "require"
       ],
       "engines": {
-        "node": "8 || 10 || 12",
+        "node": "8 || 10 || 12 || 13",
         "browsers": false
       }
     }
@@ -90,24 +91,24 @@
   "dependencies": {
     "eachr": "^3.2.0",
     "extendr": "^3.5.0",
-    "ignorefs": "^1.2.0",
+    "ignorefs": "^1.3.0",
     "safefs": "^5.0.0",
     "scandirectory": "^3.0.1",
     "taskgroup": "^6.0.0"
   },
   "devDependencies": {
-    "assert-helpers": "^5.0.0",
+    "assert-helpers": "^5.2.1",
     "bal-util": "^2.8.0",
-    "core-js": "^3.4.0",
+    "core-js": "^3.4.1",
     "eslint": "^6.6.0",
     "eslint-config-bevry": "^1.2.1",
     "eslint-config-prettier": "^6.5.0",
     "eslint-plugin-prettier": "^3.1.1",
     "jsdoc": "^3.6.3",
-    "kava": "^3.1.0",
+    "kava": "^3.2.0",
     "minami": "^1.2.3",
     "prettier": "^1.19.1",
-    "projectz": "^1.7.5",
+    "projectz": "^1.9.0",
     "rimraf": "^3.0.0",
     "surge": "^0.21.3",
     "valid-directory": "^1.0.0"

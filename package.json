@@ -91,7 +91,7 @@
     "eachr": "^3.2.0",
     "extendr": "^3.5.0",
     "ignorefs": "^1.2.0",
-    "safefs": "^4.1.0",
+    "safefs": "^5.0.0",
     "scandirectory": "^3.0.1",
     "taskgroup": "^6.0.0"
   },

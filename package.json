@@ -1,6 +1,6 @@
 {
   "name": "watchr",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "description": "Better file system watching for Node.js",
   "homepage": "https://github.com/bevry/watchr",
   "license": "MIT",
@@ -40,10 +40,7 @@
       "travisTLD": "com"
     }
   },
-  "funding": {
-    "type": "cooperative",
-    "url": "https://bevry.me/fund"
-  },
+  "funding": "https://bevry.me/fund",
   "author": "2012+ Bevry Pty Ltd <us@bevry.me> (http://bevry.me), 2011 Benjamin Lupton <b@lupton.cc> (http://balupton.com)",
   "maintainers": [
     "Benjamin Lupton <b@lupton.cc> (http://balupton.com)"
@@ -82,36 +79,36 @@
         "require"
       ],
       "engines": {
-        "node": "8 || 10 || 12 || 13",
+        "node": "8 || 10 || 12",
         "browsers": false
       }
     }
   ],
   "main": "source/index.js",
   "dependencies": {
-    "eachr": "^3.2.0",
+    "eachr": "^3.3.0",
     "extendr": "^3.5.0",
     "ignorefs": "^1.3.0",
-    "safefs": "^5.0.0",
-    "scandirectory": "^3.0.1",
-    "taskgroup": "^6.0.0"
+    "safefs": "^5.1.0",
+    "scandirectory": "^4.1.0",
+    "taskgroup": "^6.1.0"
   },
   "devDependencies": {
-    "assert-helpers": "^5.2.1",
+    "assert-helpers": "^5.3.0",
     "bal-util": "^2.8.0",
     "core-js": "^3.4.1",
     "eslint": "^6.6.0",
     "eslint-config-bevry": "^1.2.1",
-    "eslint-config-prettier": "^6.5.0",
+    "eslint-config-prettier": "^6.6.0",
     "eslint-plugin-prettier": "^3.1.1",
     "jsdoc": "^3.6.3",
     "kava": "^3.2.0",
     "minami": "^1.2.3",
     "prettier": "^1.19.1",
-    "projectz": "^1.9.0",
+    "projectz": "^1.10.0",
     "rimraf": "^3.0.0",
     "surge": "^0.21.3",
-    "valid-directory": "^1.0.0"
+    "valid-directory": "^1.1.1"
   },
   "scripts": {
     "our:clean": "rm -Rf ./docs ./edition* ./es2015 ./es5 ./out ./.next",

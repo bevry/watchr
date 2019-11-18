@@ -111,7 +111,6 @@ More advanced usage is:
 var stalker = watchr.create(path)
 
 // Listen to the events for the stalker/watcher
-// http://rawgit.com/bevry/watchr/master/docs/index.html#watcher
 stalker.on('change', listener)
 stalker.on('log', console.log)
 stalker.once('close', function (reason) {
@@ -120,7 +119,6 @@ stalker.once('close', function (reason) {
 })
 
 // Set the default configuration for the stalker/watcher
-// http://rawgit.com/bevry/watchr/master/docs/index.html#Watcher%23setConfig
 stalker.setConfig({
 	stat: null,
 	interval: 5007,

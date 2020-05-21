@@ -28,6 +28,88 @@
 
 Watchr provides a normalised API the file watching APIs of different node versions, nested/recursive file and directory watching, and accurate detailed events for file/directory creations, updates, and deletions.
 
+## Usage
+
+[Complete API Documentation.](http://master.watchr.bevry.surge.sh/docs/index.html)
+
+There are two concepts in watchr, they are:
+
+-   Watcher - this wraps the native file system watching, makes it reliable, and supports deep watching
+-   Stalker - this wraps the watcher, such that for any given path, there can be many stalkers, but only one watcher
+
+The simplest usage is:
+
+```javascript
+// Import the watching library
+var watchr = require('watchr')
+
+// Define our watching parameters
+var path = process.cwd()
+function listener(changeType, fullPath, currentStat, previousStat) {
+    switch (changeType) {
+        case 'update':
+            console.log(
+                'the file',
+                fullPath,
+                'was updated',
+                currentStat,
+                previousStat
+            )
+            break
+        case 'create':
+            console.log('the file', fullPath, 'was created', currentStat)
+            break
+        case 'delete':
+            console.log('the file', fullPath, 'was deleted', previousStat)
+            break
+    }
+}
+function next(err) {
+    if (err) return console.log('watch failed on', path, 'with error', err)
+    console.log('watch successful on', path)
+}
+
+// Watch the path with the change listener and completion callback
+var stalker = watchr.open(path, listener, next)
+
+// Close the stalker of the watcher
+stalker.close()
+```
+
+More advanced usage is:
+
+```javascript
+// Create the stalker for the path
+var stalker = watchr.create(path)
+
+// Listen to the events for the stalker/watcher
+stalker.on('change', listener)
+stalker.on('log', console.log)
+stalker.once('close', function (reason) {
+    console.log('closed', path, 'because', reason)
+    stalker.removeAllListeners() // as it is closed, no need for our change or log listeners any more
+})
+
+// Set the default configuration for the stalker/watcher
+stalker.setConfig({
+    stat: null,
+    interval: 5007,
+    persistent: true,
+    catchupDelay: 2000,
+    preferredMethods: ['watch', 'watchFile'],
+    followLinks: true,
+    ignorePaths: false,
+    ignoreHiddenFiles: false,
+    ignoreCommonPatterns: true,
+    ignoreCustomPatterns: null,
+})
+
+// Start watching
+stalker.watch(next)
+
+// Stop watching
+stalker.close()
+```
 
 <!-- INSTALL/ -->
 
@@ -36,7 +118,8 @@ Watchr provides a normalised API the file watching APIs of different node versio
 <a href="https://npmjs.com" title="npm is a package manager for javascript"><h3>npm</h3></a>
 <ul>
 <li>Install: <code>npm install --save watchr</code></li>
-<li>Require: <code>require('watchr')</code></li>
+<li>Import: <code>import * as pkg from ('watchr')</code></li>
+<li>Require: <code>const pkg = require('watchr')</code></li>
 </ul>
 
 <h3><a href="https://editions.bevry.me" title="Editions are the best way to produce and consume packages you care about.">Editions</a></h3>
@@ -44,9 +127,7 @@ Watchr provides a normalised API the file watching APIs of different node versio
 <p>This package is published with the following editions:</p>
 
 <ul><li><code>watchr</code> aliases <code>watchr/source/index.js</code></li>
-<li><code>watchr/source/index.js</code> is esnext source code with require for modules</li></ul>
-
-<p>Environments older than Node.js v8 may need <a href="https://babeljs.io/docs/usage/polyfill/" title="A polyfill that emulates missing ECMAScript environment features">Babel's Polyfill</a> or something similar.</p>
+<li><code>watchr/source/index.js</code> is <a href="https://en.wikipedia.org/wiki/ECMAScript#ES.Next" title="ECMAScript Next">ESNext</a> source code for <a href="https://nodejs.org" title="Node.js is a JavaScript runtime built on Chrome's V8 JavaScript engine">Node.js</a> with <a href="https://nodejs.org/dist/latest-v5.x/docs/api/modules.html" title="Node/CJS Modules">Require</a> for modules</li></ul>
 
 <h3><a href="https://www.typescriptlang.org/" title="TypeScript is a typed superset of JavaScript that compiles to plain JavaScript. ">TypeScript</a></h3>
 
@@ -61,84 +142,6 @@ This project provides its type information via inline <a href="http://usejsdoc.o
 ```
 
 <!-- /INSTALL -->
-
-
-## Usage
-
-[API Documentation](http://master.watchr.bevry.surge.sh/docs/)
-
-There are two concepts in watchr, they are:
-
-- Watcher - this wraps the native file system watching, makes it reliable, and supports deep watching
-- Stalker - this wraps the watcher, such that for any given path, there can be many stalkers, but only one watcher
-
-The simplest usage is:
-
-``` javascript
-// Import the watching library
-var watchr = require('watchr')
-
-// Define our watching parameters
-var path = process.cwd()
-function listener (changeType, fullPath, currentStat, previousStat) {
-	switch ( changeType ) {
-		case 'update':
-			console.log('the file', fullPath, 'was updated', currentStat, previousStat)
-			break
-		case 'create':
-			console.log('the file', fullPath, 'was created', currentStat)
-			break
-		case 'delete':
-			console.log('the file', fullPath, 'was deleted', previousStat)
-			break
-	}
-}
-function next (err) {
-	if ( err )  return console.log('watch failed on', path, 'with error', err)
-	console.log('watch successful on', path)
-}
-
-// Watch the path with the change listener and completion callback
-var stalker = watchr.open(path, listener, next)
-
-// Close the stalker of the watcher
-stalker.close()
-```
-
-More advanced usage is:
-
-``` javascript
-// Create the stalker for the path
-var stalker = watchr.create(path)
-
-// Listen to the events for the stalker/watcher
-stalker.on('change', listener)
-stalker.on('log', console.log)
-stalker.once('close', function (reason) {
-	console.log('closed', path, 'because', reason)
-	stalker.removeAllListeners()  // as it is closed, no need for our change or log listeners any more
-})
-
-// Set the default configuration for the stalker/watcher
-stalker.setConfig({
-	stat: null,
-	interval: 5007,
-	persistent: true,
-	catchupDelay: 2000,
-	preferredMethods: ['watch', 'watchFile'],
-	followLinks: true,
-	ignorePaths: false,
-	ignoreHiddenFiles: false,
-	ignoreCommonPatterns: true,
-	ignoreCustomPatterns: null
-})
-
-// Start watching
-stalker.watch(next)
-
-// Stop watching
-stalker.close()
-```
 
 
 <!-- HISTORY/ -->
@@ -167,7 +170,7 @@ stalker.close()
 
 These amazing people are maintaining this project:
 
-<ul><li><a href="http://balupton.com">Benjamin Lupton</a> — <a href="https://github.com/bevry/watchr/commits?author=balupton" title="View the GitHub contributions of Benjamin Lupton on repository bevry/watchr">view contributions</a></li></ul>
+<ul><li><a href="https://balupton.com">Benjamin Lupton</a> — <a href="https://github.com/bevry/watchr/commits?author=balupton" title="View the GitHub contributions of Benjamin Lupton on repository bevry/watchr">view contributions</a></li></ul>
 
 <h3>Sponsors</h3>
 
@@ -187,17 +190,15 @@ No sponsors yet! Will you be the first?
 
 These amazing people have contributed code to this project:
 
-<ul><li><a href="http://balupton.com">Benjamin Lupton</a> — <a href="https://github.com/bevry/watchr/commits?author=balupton" title="View the GitHub contributions of Benjamin Lupton on repository bevry/watchr">view contributions</a></li>
-<li><a href="http://www.gitbook.com">Aaron O'Mullan</a> — <a href="https://github.com/bevry/watchr/commits?author=AaronO" title="View the GitHub contributions of Aaron O'Mullan on repository bevry/watchr">view contributions</a></li>
-<li><a href="monkeyandcrow.com">Adam Sanderson</a> — <a href="https://github.com/bevry/watchr/commits?author=adamsanderson" title="View the GitHub contributions of Adam Sanderson on repository bevry/watchr">view contributions</a></li>
-<li><a href="http://ca.sey.me">Casey Foster</a> — <a href="https://github.com/bevry/watchr/commits?author=caseywebdev" title="View the GitHub contributions of Casey Foster on repository bevry/watchr">view contributions</a></li>
-<li><a href="https://github.com/FredrikNoren">Fredrik Norén</a> — <a href="https://github.com/bevry/watchr/commits?author=FredrikNoren" title="View the GitHub contributions of Fredrik Norén on repository bevry/watchr">view contributions</a></li>
-<li><a href="https://github.com/robsonpeixoto">Robson Roberto Souza Peixoto</a> — <a href="https://github.com/bevry/watchr/commits?author=robsonpeixoto" title="View the GitHub contributions of Robson Roberto Souza Peixoto on repository bevry/watchr">view contributions</a></li>
-<li><a href="http://stuartk.com/">Stuart Knightley</a> — <a href="https://github.com/bevry/watchr/commits?author=Stuk" title="View the GitHub contributions of Stuart Knightley on repository bevry/watchr">view contributions</a></li>
+<ul><li><a href="https://github.com/AaronO">Aaron O'Mullan</a> — <a href="https://github.com/bevry/watchr/commits?author=AaronO" title="View the GitHub contributions of Aaron O'Mullan on repository bevry/watchr">view contributions</a></li>
+<li><a href="https://github.com/adamsanderson">Adam Sanderson</a> — <a href="https://github.com/bevry/watchr/commits?author=adamsanderson" title="View the GitHub contributions of Adam Sanderson on repository bevry/watchr">view contributions</a></li>
+<li><a href="https://balupton.com">Benjamin Lupton</a> — <a href="https://github.com/bevry/watchr/commits?author=balupton" title="View the GitHub contributions of Benjamin Lupton on repository bevry/watchr">view contributions</a></li>
+<li><a href="https://github.com/caseywebdev">Casey Foster</a> — <a href="https://github.com/bevry/watchr/commits?author=caseywebdev" title="View the GitHub contributions of Casey Foster on repository bevry/watchr">view contributions</a></li>
 <li><a href="http://digitalocean.com">David Byrd</a></li>
+<li><a href="https://github.com/FredrikNoren">Fredrik Norén</a> — <a href="https://github.com/bevry/watchr/commits?author=FredrikNoren" title="View the GitHub contributions of Fredrik Norén on repository bevry/watchr">view contributions</a></li>
 <li><a href="https://github.com/jlevine22">Josh Levine</a> — <a href="https://github.com/bevry/watchr/commits?author=jlevine22" title="View the GitHub contributions of Josh Levine on repository bevry/watchr">view contributions</a></li>
-<li><a href="http://github.com/apps/dependabot">dependabot[bot]</a> — <a href="https://github.com/bevry/watchr/commits?author=dependabot[bot]" title="View the GitHub contributions of dependabot[bot] on repository bevry/watchr">view contributions</a></li>
-<li><a href="http://github.com/apps/dependabot-preview">dependabot-preview[bot]</a> — <a href="https://github.com/bevry/watchr/commits?author=dependabot-preview[bot]" title="View the GitHub contributions of dependabot-preview[bot] on repository bevry/watchr">view contributions</a></li></ul>
+<li><a href="https://github.com/robsonpeixoto">Robson Roberto Souza Peixoto</a> — <a href="https://github.com/bevry/watchr/commits?author=robsonpeixoto" title="View the GitHub contributions of Robson Roberto Souza Peixoto on repository bevry/watchr">view contributions</a></li>
+<li><a href="https://github.com/Stuk">Stuart Knightley</a> — <a href="https://github.com/bevry/watchr/commits?author=Stuk" title="View the GitHub contributions of Stuart Knightley on repository bevry/watchr">view contributions</a></li></ul>
 
 <a href="https://github.com/bevry/watchr/blob/master/CONTRIBUTING.md#files">Discover how you can contribute by heading on over to the <code>CONTRIBUTING.md</code> file.</a>
 
@@ -211,7 +212,7 @@ These amazing people have contributed code to this project:
 Unless stated otherwise all works are:
 
 <ul><li>Copyright &copy; 2012+ <a href="http://bevry.me">Bevry Pty Ltd</a></li>
-<li>Copyright &copy; 2011 <a href="http://balupton.com">Benjamin Lupton</a></li></ul>
+<li>Copyright &copy; 2011 <a href="https://balupton.com">Benjamin Lupton</a></li></ul>
 
 and licensed under:
 

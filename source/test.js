@@ -35,13 +35,13 @@ const writetree = {
 	'a directory': {
 		'a sub file of a directory': 'content of a sub file of a directory',
 		'another sub file of a directory':
-			'content of another sub file of a directory'
+			'content of another sub file of a directory',
 	},
 	'.a hidden directory': {
 		'a sub file of a hidden directory':
-			'content of a sub file of a hidden directory'
+			'content of a sub file of a hidden directory',
 	},
-	'a specific ignored file': 'content of a specific ignored file'
+	'a specific ignored file': 'content of a specific ignored file',
 }
 
 // =====================================
@@ -54,7 +54,7 @@ function runTests(opts, describe, test) {
 	// Change detection
 	let changes = []
 	function checkChanges(expectedChanges, extraTest, next) {
-		wait(batchDelay, function() {
+		wait(batchDelay, function () {
 			if (changes.length !== expectedChanges) {
 				console.log(changes)
 			}
@@ -102,19 +102,19 @@ function runTests(opts, describe, test) {
 	}
 
 	// Tests
-	test('remove old test files', function(done) {
-		rimraf(fixturesPath, function(err) {
+	test('remove old test files', function (done) {
+		rimraf(fixturesPath, function (err) {
 			done(err)
 		})
 	})
 
-	test('write new test files', function(done) {
-		balUtil.writetree(fixturesPath, writetree, function(err) {
+	test('write new test files', function (done) {
+		balUtil.writetree(fixturesPath, writetree, function (err) {
 			done(err)
 		})
 	})
 
-	test('start watching', function(done) {
+	test('start watching', function (done) {
 		stalker = create(fixturesPath)
 		stalker.on('log', console.log)
 		stalker.on('change', changeHappened)
@@ -123,39 +123,39 @@ function runTests(opts, describe, test) {
 				{
 					path: fixturesPath,
 					ignorePaths: [pathUtil.join(fixturesPath, 'a specific ignored file')],
-					ignoreHiddenFiles: true
+					ignoreHiddenFiles: true,
 				},
 				opts
 			)
 		)
-		stalker.watch(err => {
-			wait(batchDelay, function() {
+		stalker.watch((err) => {
+			wait(batchDelay, function () {
 				done(err)
 			})
 		})
 	})
 
-	test('detect write', function(done) {
+	test('detect write', function (done) {
 		writeFile('a file')
 		writeFile('a directory/a sub file of a directory')
 		checkChanges(2, null, done)
 	})
 
-	test('detect write ignored on hidden files', function(done) {
+	test('detect write ignored on hidden files', function (done) {
 		writeFile('.a hidden directory/a sub file of a hidden directory')
 		checkChanges(0, null, done)
 	})
 
-	test('detect write ignored on ignored files', function(done) {
+	test('detect write ignored on ignored files', function (done) {
 		writeFile('a specific ignored file')
 		checkChanges(0, null, done)
 	})
 
-	test('detect delete', function(done) {
+	test('detect delete', function (done) {
 		deleteFile('a directory/another sub file of a directory')
 		checkChanges(
 			1,
-			function(changes) {
+			function (changes) {
 				// make sure previous stat is given
 				if (!changes[0][3]) {
 					console.log(changes[0])
@@ -166,22 +166,22 @@ function runTests(opts, describe, test) {
 		)
 	})
 
-	test('detect delete ignored on hidden files', function(done) {
+	test('detect delete ignored on hidden files', function (done) {
 		deleteFile('.a hidden directory/a sub file of a hidden directory')
 		checkChanges(0, null, done)
 	})
 
-	test('detect delete ignored on ignored files', function(done) {
+	test('detect delete ignored on ignored files', function (done) {
 		deleteFile('a specific ignored file')
 		checkChanges(0, null, done)
 	})
 
-	test('detect mkdir', function(done) {
+	test('detect mkdir', function (done) {
 		makeDir('a new directory')
 		checkChanges(1, null, done)
 	})
 
-	test('detect mkdir and write', function(done) {
+	test('detect mkdir and write', function (done) {
 		writeFile('a new file')
 		writeFile('another new file')
 		writeFile('and another new file')
@@ -189,23 +189,23 @@ function runTests(opts, describe, test) {
 		checkChanges(4, null, done)
 	})
 
-	test('detect rename', function(done) {
+	test('detect rename', function (done) {
 		renameFile('a new file', 'a new file that was renamed')
 		checkChanges(2, null, done) // unlink, new
 	})
 
-	test('detect subdir file write', function(done) {
+	test('detect subdir file write', function (done) {
 		writeFile('a new directory/a new file of a new directory')
 		writeFile('a new directory/another new file of a new directory')
 		checkChanges(2, null, done)
 	})
 
-	test('detect subdir file delete', function(done) {
+	test('detect subdir file delete', function (done) {
 		deleteFile('a new directory/another new file of a new directory')
 		checkChanges(1, null, done)
 	})
 
-	test('stop watching', function() {
+	test('stop watching', function () {
 		if (stalker) {
 			stalker.close()
 		} else {
@@ -215,11 +215,11 @@ function runTests(opts, describe, test) {
 }
 
 // Run tests for each method
-kava.describe('watchr', function(describe) {
-	describe('watch', function(describe, test) {
+kava.describe('watchr', function (describe) {
+	describe('watch', function (describe, test) {
 		runTests({ preferredMethods: ['watch', 'watchFile'] }, describe, test)
 	})
-	describe('watchFile', function(describe, test) {
+	describe('watchFile', function (describe, test) {
 		runTests({ preferredMethods: ['watchFile', 'watch'] }, describe, test)
 	})
 })

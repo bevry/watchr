@@ -1,4 +1,4 @@
-# 2019 January 26
+# 2020 May 12
 # https://github.com/bevry/base
 
 # System Files
@@ -27,11 +27,15 @@ node_modules/
 .pnp/
 .pnp.js
 
+# -------------------------------------
+# CDN Inclusions, Git Exclusions
+
 # Build Outputs
 **/out.*
 **/*.out.*
 **/out/
 **/output/
+*compiled*
 edition*/
 coffeejs/
 coffee/

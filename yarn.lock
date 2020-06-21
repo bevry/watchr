@@ -1713,7 +1713,7 @@ read@1.0.x:
   dependencies:
     mute-stream "~0.0.4"
 
-readdir-cluster@^3.3.0, readdir-cluster@^3.4.0:
+readdir-cluster@^3.4.0, readdir-cluster@^3.5.0:
   version "3.7.0"
   resolved "https://registry.yarnpkg.com/readdir-cluster/-/readdir-cluster-3.7.0.tgz#7655fc8c3487f4a6b375295c56a1284c723e8578"
   integrity sha512-uODz8yqFGVbTh7NNmbhcQOKdsFAsdF5BKJD1tqQcbvca91eFzXCC5SgoRqi2LM5Hp/C8WuW6wNYMvr71/Syzqg==
@@ -2295,12 +2295,12 @@ v8-compile-cache@^2.0.3:
   resolved "https://registry.yarnpkg.com/v8-compile-cache/-/v8-compile-cache-2.1.1.tgz#54bc3cdd43317bca91e35dcaf305b1a7237de745"
   integrity sha512-8OQ9CL+VWyt3JStj7HX7/ciTL2V3Rl1Wf5OL+SNTm0yK1KvtReVulksyeRnCANHHuUxHlQig+JJDlUhBt1NQDQ==
 
-valid-directory@2.2.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/valid-directory/-/valid-directory-2.2.0.tgz#add5e0659480daf795b1d0c7892cff2bb53a83bd"
-  integrity sha512-0QefDAvsNVS1LCsXeNETET/0b5a0dDqYy7qpvtwUWizAxVWuDo+Kp7Czo1HL/W7Nm6X/lbdkM/deoi02uOcn5Q==
+valid-directory@2.5.0:
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/valid-directory/-/valid-directory-2.5.0.tgz#239cf39e5c05403d8b6fbd23aa45dc20c242035c"
+  integrity sha512-j/cLzLu/7FHC1UQwExHfvqgh72j+a9goxxAOz07O1awWoMXiJymqVHJ4K7GVeeNhfZKwOaa548OnYgOVOeLMWw==
   dependencies:
-    readdir-cluster "^3.3.0"
+    readdir-cluster "^3.5.0"
     valid-filename "^3.1.0"
 
 valid-filename@^3.1.0:

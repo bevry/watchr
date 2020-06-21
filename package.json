@@ -116,7 +116,7 @@
     "projectz": "^2.9.0",
     "rimraf": "^3.0.2",
     "surge": "^0.21.3",
-    "valid-directory": "2.2.0"
+    "valid-directory": "2.5.0"
   },
   "scripts": {
     "our:clean": "rm -Rf ./docs ./edition* ./es2015 ./es5 ./out ./.next",

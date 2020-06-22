@@ -98,7 +98,7 @@
     "extendr": "^5.5.0",
     "ignorefs": "^3.4.0",
     "safefs": "^6.4.0",
-    "scandirectory": "6.4.0",
+    "scandirectory": "6.8.0",
     "taskgroup": "7.7.0"
   },
   "devDependencies": {

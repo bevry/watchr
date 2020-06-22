@@ -1108,12 +1108,11 @@ ignorefs@^1.0.0, ignorefs@^1.1.1:
     editions "^2.2.0"
     ignorepatterns "^1.4.0"
 
-ignorefs@^3.4.0:
-  version "3.7.0"
-  resolved "https://registry.yarnpkg.com/ignorefs/-/ignorefs-3.7.0.tgz#da872c6feb8555a1f6e56462f9240ac697540ee2"
-  integrity sha512-Z/IzTrggZYSwvAyvOxSFA1LSA85J2U2oXO4LPrOe4tCyFzSV0AcDxwVUCD3VO2zkwYrsLw4i+7rdJwTWp87YEA==
+ignorefs@^3.4.0, ignorefs@^3.6.0:
+  version "3.8.0"
+  resolved "https://registry.yarnpkg.com/ignorefs/-/ignorefs-3.8.0.tgz#1c4d2680867a8fd477e05b334dfdce2fdfe7db26"
+  integrity sha512-y0/1CRdLM+WhWV5EOqMgcqk5II1v4ent7wzP0pSrfXlBXAudW8xnHY1bZ3Qm/b3hdnd/NZhuHxwdxJ0nOKR/FQ==
   dependencies:
-    editions "3.5.0"
     ignorepatterns "4.4.0"
 
 ignorepatterns@4.4.0:
@@ -1713,12 +1712,10 @@ read@1.0.x:
   dependencies:
     mute-stream "~0.0.4"
 
-readdir-cluster@^3.3.0, readdir-cluster@^3.4.0:
-  version "3.7.0"
-  resolved "https://registry.yarnpkg.com/readdir-cluster/-/readdir-cluster-3.7.0.tgz#7655fc8c3487f4a6b375295c56a1284c723e8578"
-  integrity sha512-uODz8yqFGVbTh7NNmbhcQOKdsFAsdF5BKJD1tqQcbvca91eFzXCC5SgoRqi2LM5Hp/C8WuW6wNYMvr71/Syzqg==
-  dependencies:
-    editions "3.5.0"
+readdir-cluster@^3.3.0, readdir-cluster@^3.6.0:
+  version "3.8.0"
+  resolved "https://registry.yarnpkg.com/readdir-cluster/-/readdir-cluster-3.8.0.tgz#35a17417dc421453a659cc48cb8114156c61201d"
+  integrity sha512-yozJcvfnxS7UW38LvYG6zRFvh+JOaorjqFu/jpxjINtlJxuLcJe6J5ojLx7w6qwTDLbf+rAmsINbPQO802suYw==
 
 regexp.prototype.flags@^1.3.0:
   version "1.3.0"
@@ -1865,13 +1862,13 @@ safeps@7.0.1:
   resolved "https://registry.yarnpkg.com/safer-buffer/-/safer-buffer-2.1.2.tgz#44fa161b0187b9549dd84bb91802f9bd8385cd6a"
   integrity sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==
 
-scandirectory@6.4.0:
-  version "6.4.0"
-  resolved "https://registry.yarnpkg.com/scandirectory/-/scandirectory-6.4.0.tgz#a853662326ec06aab97e9e2cb66b4fa92afc3636"
-  integrity sha512-uqiGuKF5jV82Eb8p8pcjSJZyAP3SF9xxEndUirscdZRa99LPQuNBbNQuCwHOt+BpCXEEeG7WESq688Aj8CoTGA==
+scandirectory@6.8.0:
+  version "6.8.0"
+  resolved "https://registry.yarnpkg.com/scandirectory/-/scandirectory-6.8.0.tgz#061137be2db4c9d77091076b0600dc0a0d487d68"
+  integrity sha512-Ynz6bz5OBihMZv20DsepEH5DSNYHqSvWKKB6dB2HoDj7dUSMaVbQE7pqk4N2rBfCPVUniioIFQ+U6AQcFgcf5w==
   dependencies:
-    ignorefs "^3.4.0"
-    readdir-cluster "^3.4.0"
+    ignorefs "^3.6.0"
+    readdir-cluster "^3.6.0"
 
 scandirectory@^2.5.0:
   version "2.5.0"

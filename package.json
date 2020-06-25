@@ -1,6 +1,6 @@
 {
   "name": "watchr",
-  "version": "6.3.0",
+  "version": "6.4.0",
   "description": "Better file system watching for Node.js",
   "homepage": "https://github.com/bevry/watchr",
   "license": "MIT",
@@ -95,28 +95,28 @@
   "main": "source/index.js",
   "dependencies": {
     "eachr": "^4.5.0",
-    "extendr": "^5.5.0",
-    "ignorefs": "^3.4.0",
-    "safefs": "^6.4.0",
-    "scandirectory": "6.4.0",
-    "taskgroup": "7.7.0"
+    "extendr": "^5.10.0",
+    "ignorefs": "^3.9.0",
+    "safefs": "^6.9.0",
+    "scandirectory": "6.8.0",
+    "taskgroup": "7.12.0"
   },
   "devDependencies": {
-    "@bevry/update-contributors": "1.9.0",
-    "assert-helpers": "^6.8.0",
+    "@bevry/update-contributors": "^1.13.0",
+    "assert-helpers": "^6.13.0",
     "bal-util": "^2.8.0",
     "core-js": "^3.6.5",
-    "eslint": "^7.3.0",
-    "eslint-config-bevry": "^3.8.0",
-    "eslint-config-prettier": "^6.7.0",
+    "eslint": "^7.3.1",
+    "eslint-config-bevry": "^3.13.0",
+    "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-prettier": "^3.1.4",
     "jsdoc": "^3.6.4",
-    "kava": "^5.7.0",
+    "kava": "^5.8.0",
     "prettier": "^2.0.5",
-    "projectz": "^2.9.0",
+    "projectz": "^2.11.0",
     "rimraf": "^3.0.2",
     "surge": "^0.21.3",
-    "valid-directory": "2.2.0"
+    "valid-directory": "^2.6.0"
   },
   "scripts": {
     "our:clean": "rm -Rf ./docs ./edition* ./es2015 ./es5 ./out ./.next",

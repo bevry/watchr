@@ -103,7 +103,7 @@
   },
   "devDependencies": {
     "@bevry/update-contributors": "^1.16.0",
-    "assert-helpers": "^6.19.0",
+    "assert-helpers": "^7.0.0",
     "bal-util": "^2.8.0",
     "core-js": "^3.6.5",
     "eslint": "^7.7.0",

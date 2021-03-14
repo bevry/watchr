@@ -116,7 +116,7 @@
     "prettier": "^2.1.2",
     "projectz": "^2.17.0",
     "rimraf": "^3.0.2",
-    "surge": "^0.21.6",
+    "surge": "^0.22.1",
     "valid-directory": "^3.5.0"
   },
   "scripts": {

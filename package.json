@@ -1,6 +1,6 @@
 {
   "name": "watchr",
-  "version": "6.10.0",
+  "version": "6.11.0",
   "description": "Better file system watching for Node.js",
   "homepage": "https://github.com/bevry/watchr",
   "license": "MIT",
@@ -78,7 +78,7 @@
   },
   "editions": [
     {
-      "description": "ESNext source code for Node.js 10 || 12 || 14 with Require for modules",
+      "description": "ESNext source code for Node.js 10 || 12 || 14 || 16 with Require for modules",
       "directory": "source",
       "entry": "index.js",
       "tags": [
@@ -88,7 +88,7 @@
         "require"
       ],
       "engines": {
-        "node": "10 || 12 || 14"
+        "node": "10 || 12 || 14 || 16"
       }
     }
   ],
@@ -96,28 +96,28 @@
   "main": "source/index.js",
   "dependencies": {
     "eachr": "^4.5.0",
-    "extendr": "^5.17.0",
-    "ignorefs": "^3.15.0",
-    "safefs": "^6.14.0",
-    "scandirectory": "^6.14.0",
-    "taskgroup": "^7.17.0"
+    "extendr": "^5.19.0",
+    "ignorefs": "^3.17.0",
+    "safefs": "^6.16.0",
+    "scandirectory": "^6.16.0",
+    "taskgroup": "^7.19.0"
   },
   "devDependencies": {
-    "@bevry/update-contributors": "^1.18.0",
-    "assert-helpers": "^8.2.0",
+    "@bevry/update-contributors": "^1.20.0",
+    "assert-helpers": "^8.4.0",
     "bal-util": "^2.8.0",
-    "core-js": "^3.15.2",
+    "core-js": "^3.16.0",
     "eslint": "^7.31.0",
-    "eslint-config-bevry": "^3.23.0",
+    "eslint-config-bevry": "^3.27.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.0",
     "jsdoc": "^3.6.7",
-    "kava": "^5.14.0",
+    "kava": "^5.15.0",
     "prettier": "^2.3.2",
-    "projectz": "^2.18.0",
+    "projectz": "^2.22.0",
     "rimraf": "^3.0.2",
     "surge": "^0.23.0",
-    "valid-directory": "^3.7.0"
+    "valid-directory": "^3.9.0"
   },
   "scripts": {
     "our:clean": "rm -Rf ./docs ./edition* ./es2015 ./es5 ./out ./.next",

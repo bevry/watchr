@@ -115,7 +115,7 @@
     "kava": "^5.15.0",
     "prettier": "^2.3.2",
     "projectz": "^2.22.0",
-    "rimraf": "^3.0.2",
+    "rimraf": "^5.0.5",
     "surge": "^0.23.0",
     "valid-directory": "^3.9.0"
   },

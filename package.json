@@ -100,7 +100,7 @@
     "ignorefs": "^3.17.0",
     "safefs": "^6.16.0",
     "scandirectory": "^6.16.0",
-    "taskgroup": "^7.19.0"
+    "taskgroup": "^9.3.0"
   },
   "devDependencies": {
     "@bevry/update-contributors": "^1.20.0",

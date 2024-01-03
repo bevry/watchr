@@ -1,59 +1,84 @@
 /* @flow */
 /* eslint no-console:0 no-sync:0 */
-'use strict'
 
-// Requires
-const pathUtil = require('path')
-const fsUtil = require('fs')
-const balUtil = require('bal-util')
-const rimraf = require('rimraf')
-const extendr = require('extendr')
-const { equal } = require('assert-helpers')
-const { ok } = require('assert')
-const kava = require('kava')
-const { create } = require('./index')
+// builtin
+import { version } from 'process'
+import { tmpdir } from 'os'
+import { join } from 'path'
+import { writeFileSync, mkdirSync, unlinkSync, renameSync } from 'fs'
+import { ok } from 'assert'
 
-// =====================================
-// Configuration
+// external
+import remove from '@bevry/fs-remove'
+import { writeTree } from '@bevry/fs-tree'
+import { equal } from 'assert-helpers'
+import kava, { Errback, Suite, Test } from 'kava'
+
+// local
+import { Method, Stalker, WatcherOptions, create } from './index.js'
 
 // Helpers
-function wait(delay, fn) {
+function wait(delay: number, fn: () => void) {
 	console.log(`completed, waiting for ${delay}ms delay...`)
 	return setTimeout(fn, delay)
 }
+function writeFile(fileRelativePath: string) {
+	console.log('write:', fileRelativePath)
+	const fileFullPath = join(fixturesPath, fileRelativePath)
+	writeFileSync(
+		fileFullPath,
+		`${fileRelativePath} now has the random number ${Math.random()}`
+	)
+}
+function deleteFile(fileRelativePath: string) {
+	console.log('delete:', fileRelativePath)
+	const fileFullPath = join(fixturesPath, fileRelativePath)
+	unlinkSync(fileFullPath)
+}
+function makeDir(fileRelativePath: string) {
+	console.log('make:', fileRelativePath)
+	const fileFullPath = join(fixturesPath, fileRelativePath)
+	mkdirSync(fileFullPath, 0o700)
+}
+function renameFile(fileRelativePath1: string, fileRelativePath2: string) {
+	console.log('rename:', fileRelativePath1, 'TO', fileRelativePath2)
+	const fileFullPath1 = join(fixturesPath, fileRelativePath1)
+	const fileFullPath2 = join(fixturesPath, fileRelativePath2)
+	renameSync(fileFullPath1, fileFullPath2)
+}
 
-// Test Data
+// configuration
 const batchDelay = 10 * 1000
-const fixturesPath = pathUtil.join(
-	require('os').tmpdir(),
-	'watchr',
-	'tests',
-	process.version
-)
-const writetree = {
-	'a file': 'content of a file',
+const fixturesPath = join(tmpdir(), 'watchr', 'tests', version)
+type Tree = { [basename: string]: string | Tree }
+const tree = {
+	'.a hidden directory': {
+		'a sub file of a hidden directory':
+			'content of a sub file of a hidden directory',
+	},
 	'a directory': {
 		'a sub file of a directory': 'content of a sub file of a directory',
 		'another sub file of a directory':
 			'content of another sub file of a directory',
 	},
-	'.a hidden directory': {
-		'a sub file of a hidden directory':
-			'content of a sub file of a hidden directory',
-	},
+	'a file': 'content of a file',
 	'a specific ignored file': 'content of a specific ignored file',
 }
 
 // =====================================
 // Tests
 
-function runTests(opts, describe, test) {
+function runTests(opts: WatcherOptions, suite: Suite, test: Test) {
 	// Prepare
-	let stalker = null
+	let stalker: Stalker | null = null
 
 	// Change detection
-	let changes = []
-	function checkChanges(expectedChanges, extraTest, next) {
+	let changes: Array<any> = []
+	function checkChanges(
+		expectedChanges: number,
+		extraTest: null | ((changes: Array<any>) => void),
+		next: Errback
+	) {
 		wait(batchDelay, function () {
 			if (changes.length !== expectedChanges) {
 				console.log(changes)
@@ -70,48 +95,22 @@ function runTests(opts, describe, test) {
 			next()
 		})
 	}
-	function changeHappened(...args) {
+	function changeHappened(...args: Array<any>) {
 		changes.push(args)
-		console.log(`a watch event occured: ${changes.length}`, args)
-	}
-
-	// Files changes
-	function writeFile(fileRelativePath) {
-		console.log('write:', fileRelativePath)
-		const fileFullPath = pathUtil.join(fixturesPath, fileRelativePath)
-		fsUtil.writeFileSync(
-			fileFullPath,
-			`${fileRelativePath} now has the random number ${Math.random()}`
-		)
-	}
-	function deleteFile(fileRelativePath) {
-		console.log('delete:', fileRelativePath)
-		const fileFullPath = pathUtil.join(fixturesPath, fileRelativePath)
-		fsUtil.unlinkSync(fileFullPath)
-	}
-	function makeDir(fileRelativePath) {
-		console.log('make:', fileRelativePath)
-		const fileFullPath = pathUtil.join(fixturesPath, fileRelativePath)
-		fsUtil.mkdirSync(fileFullPath, 0o700)
-	}
-	function renameFile(fileRelativePath1, fileRelativePath2) {
-		console.log('rename:', fileRelativePath1, 'TO', fileRelativePath2)
-		const fileFullPath1 = pathUtil.join(fixturesPath, fileRelativePath1)
-		const fileFullPath2 = pathUtil.join(fixturesPath, fileRelativePath2)
-		fsUtil.renameSync(fileFullPath1, fileFullPath2)
+		console.log(`a watch event occurred: ${changes.length}`, args)
 	}
 
 	// Tests
 	test('remove old test files', function (done) {
-		rimraf(fixturesPath, function (err) {
-			done(err)
-		})
+		remove(fixturesPath)
+			.then(() => done())
+			.catch((err) => done(err))
 	})
 
 	test('write new test files', function (done) {
-		balUtil.writetree(fixturesPath, writetree, function (err) {
-			done(err)
-		})
+		writeTree(fixturesPath, tree)
+			.then(() => done())
+			.catch((err: any) => done(err))
 	})
 
 	test('start watching', function (done) {
@@ -119,10 +118,10 @@ function runTests(opts, describe, test) {
 		stalker.on('log', console.log)
 		stalker.on('change', changeHappened)
 		stalker.setConfig(
-			extendr.extend(
+			Object.assign(
 				{
 					path: fixturesPath,
-					ignorePaths: [pathUtil.join(fixturesPath, 'a specific ignored file')],
+					ignorePaths: [join(fixturesPath, 'a specific ignored file')],
 					ignoreHiddenFiles: true,
 				},
 				opts
@@ -215,11 +214,19 @@ function runTests(opts, describe, test) {
 }
 
 // Run tests for each method
-kava.describe('watchr', function (describe) {
-	describe('watch', function (describe, test) {
-		runTests({ preferredMethods: ['watch', 'watchFile'] }, describe, test)
+kava.suite('watchr', function (suite) {
+	suite('watch', function (suite, test) {
+		runTests(
+			{ preferredMethods: [Method.Watch, Method.WatchFile] },
+			suite,
+			test
+		)
 	})
-	describe('watchFile', function (describe, test) {
-		runTests({ preferredMethods: ['watchFile', 'watch'] }, describe, test)
+	suite('watchFile', function (suite, test) {
+		runTests(
+			{ preferredMethods: [Method.WatchFile, Method.Watch] },
+			suite,
+			test
+		)
 	})
 })

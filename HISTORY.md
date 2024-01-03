@@ -1,5 +1,20 @@
 # History
 
+## v7.0.0 2024 January 3
+
+-   This should be a backwards compatible release, as the public API has not changed, supporting graceful upgradation (specially around scanning directories and ignore customisation)
+-   Implemented in TypeScript
+    -   Closes [issue #102](https://github.com/bevry/watchr/issues/102)
+-   Fixed change handling not operating in parallel
+-   Removed private methods that no longer needed: `getIgnoredOptions`
+-   Upgraded for [`scandirectory` v8](https://github.com/bevry/scandirectory) and [`ignorefs` v5](https://github.com/bevry/ignorefs) which no longer use [`readdir-cluster``](https://github.com/bevry/readdir-cluster)
+    -   This offers improved performance, compatibility, and ignore customisation
+    -   Closes [issue #341](https://github.com/bevry/watchr/issues/341)
+    -   Closes [issue #92](https://github.com/bevry/watchr/issues/92), [issue #81](https://github.com/bevry/watchr/issues/81), [issue #44](https://github.com/bevry/watchr/issues/44)
+-   Updated dependencies, [base files](https://github.com/bevry/base), and [editions](https://editions.bevry.me) using [boundation](https://github.com/bevry/boundation)
+    -   Closes [issue #342](https://github.com/bevry/watchr/issues/342), [issue #98](https://github.com/bevry/watchr/issues/98)
+-   Thank you to the sponsors: [Andrew Nesbitt](https://nesbitt.io), [Balsa](https://balsa.com), [Codecov](https://codecov.io), [Frontend Masters](https://FrontendMasters.com), [Poonacha Medappa](https://poonachamedappa.com), [Rob Morris](https://github.com/Rob-Morris), [Sentry](https://sentry.io), [Syntax](https://syntax.fm)
+
 ## v6.11.0 2021 July 31
 
 -   Updated dependencies, [base files](https://github.com/bevry/base), and [editions](https://editions.bevry.me) using [boundation](https://github.com/bevry/boundation)

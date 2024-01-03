@@ -4,7 +4,6 @@
 
 <!-- /TITLE -->
 
-
 <!-- BADGES/ -->
 
 <span class="badge-githubworkflow"><a href="https://github.com/bevry/watchr/actions?query=workflow%3Abevry" title="View the status of this project's GitHub Workflow: bevry"><img src="https://github.com/bevry/watchr/workflows/bevry/badge.svg" alt="Status of the GitHub Workflow: bevry" /></a></span>
@@ -25,12 +24,19 @@
 
 <!-- /BADGES -->
 
-
 Watchr provides a normalised API the file watching APIs of different node versions, nested/recursive file and directory watching, and accurate detailed events for file/directory creations, updates, and deletions.
 
 ## Usage
 
 [Complete API Documentation.](http://master.watchr.bevry.surge.sh/docs/)
+
+
+
+
+
+
+
+
 
 There are two concepts in watchr, they are:
 
@@ -41,10 +47,10 @@ The simplest usage is:
 
 ```javascript
 // Import the watching library
-var watchr = require('watchr')
+import { open } from 'watchr'
 
 // Define our watching parameters
-var path = process.cwd()
+const path = process.cwd()
 function listener(changeType, fullPath, currentStat, previousStat) {
     switch (changeType) {
         case 'update':
@@ -70,7 +76,7 @@ function next(err) {
 }
 
 // Watch the path with the change listener and completion callback
-var stalker = watchr.open(path, listener, next)
+var stalker = open(path, listener, next)
 
 // Close the stalker of the watcher
 stalker.close()
@@ -79,43 +85,46 @@ stalker.close()
 More advanced usage is:
 
 ```javascript
+// Import the watching library
+import { create } from 'watchr'
+
 // Create the stalker for the path
-var stalker = watchr.create(path)
+const stalker = create(path)
 
 // Listen to the events for the stalker/watcher
-stalker.on('change', listener)
+stalker.on('change', listener) // use the listener from earlier
 stalker.on('log', console.log)
 stalker.once('close', function (reason) {
     console.log('closed', path, 'because', reason)
     stalker.removeAllListeners() // as it is closed, no need for our change or log listeners any more
 })
 
-// Set the default configuration for the stalker/watcher
+// Set custom configuration for the stalker/watcher
 stalker.setConfig({
-    stat: null,
-    interval: 5007,
-    persistent: true,
-    catchupDelay: 2000,
-    preferredMethods: ['watch', 'watchFile'],
-    followLinks: true,
-    ignorePaths: false,
-    ignoreHiddenFiles: false,
-    ignoreCommonPatterns: true,
-    ignoreCustomPatterns: null,
+    // ...
 })
 
 // Start watching
-stalker.watch(next)
+stalker.watch(next) // use the next callback from earlier
 
 // Stop watching
 stalker.close()
 ```
+
+
+
+
+
+
+
+
 
 <!-- INSTALL/ -->
 
 <h2>Install</h2>
 
 <a href="https://npmjs.com" title="npm is a package manager for javascript"><h3>npm</h3></a>
+
 <ul>
 <li>Install: <code>npm install --save watchr</code></li>
 <li>Import: <code>import * as pkg from ('watchr')</code></li>
@@ -133,16 +142,15 @@ stalker.close()
 
 This project provides its type information via inline <a href="http://usejsdoc.org" title="JSDoc is an API documentation generator for JavaScript, similar to Javadoc or phpDocumentor">JSDoc Comments</a>. To make use of this in <a href="https://www.typescriptlang.org/" title="TypeScript is a typed superset of JavaScript that compiles to plain JavaScript. ">TypeScript</a>, set your <code>maxNodeModuleJsDepth</code> compiler option to `5` or thereabouts. You can accomlish this via your `tsconfig.json` file like so:
 
-``` json
+```json
 {
-  "compilerOptions": {
-    "maxNodeModuleJsDepth": 5
-  }
+    "compilerOptions": {
+        "maxNodeModuleJsDepth": 5
+    }
 }
 ```
 
 <!-- /INSTALL -->
-
 
 <!-- HISTORY/ -->
 
@@ -152,7 +160,6 @@ This project provides its type information via inline <a href="http://usejsdoc.o
 
 <!-- /HISTORY -->
 
-
 <!-- CONTRIBUTE/ -->
 
 <h2>Contribute</h2>
@@ -160,7 +167,6 @@ This project provides its type information via inline <a href="http://usejsdoc.o
 <a href="https://github.com/bevry/watchr/blob/master/CONTRIBUTING.md#files">Discover how you can contribute by heading on over to the <code>CONTRIBUTING.md</code> file.</a>
 
 <!-- /CONTRIBUTE -->
-
 
 <!-- BACKERS/ -->
 
@@ -203,7 +209,6 @@ These amazing people have contributed code to this project:
 <a href="https://github.com/bevry/watchr/blob/master/CONTRIBUTING.md#files">Discover how you can contribute by heading on over to the <code>CONTRIBUTING.md</code> file.</a>
 
 <!-- /BACKERS -->
-
 
 <!-- LICENSE/ -->
 
